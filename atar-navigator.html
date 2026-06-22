@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATAR Sandbox — Transparent QLD ATAR Estimator</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --bg-panel: #1e293b;
+    --bg-panel-2: #334155;
+    --border: #475569;
+    --text: #f1f5f9;
+    --text-dim: #cbd5e1;
+    --text-mute: #94a3b8;
+    --accent: #fbbf24;
+    --accent-text: #1f1300;
+    --success: #4ade80;
+    --warning: #fb923c;
+    --danger: #f87171;
+    --info: #60a5fa;
+    --shadow: 0 4px 14px rgba(0,0,0,0.35);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  a { color: var(--info); }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 80px; }
+  header { margin-bottom: 18px; }
+  h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.5px; }
+  h1 .badge { font-size: 12px; background: var(--accent); color: var(--accent-text); padding: 3px 8px; border-radius: 4px; margin-left: 8px; vertical-align: middle; font-weight: 700; }
+  .sub { color: var(--text-dim); font-size: 14px; max-width: 720px; }
+  .panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow); }
+  .panel h2 { font-size: 17px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+  .panel h2 .step { background: var(--accent); color: var(--accent-text); width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
+  .subject-row { display: grid; grid-template-columns: 1fr 90px 90px 110px 32px; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--bg-panel-2); }
+  .subject-row:last-child { border-bottom: none; }
+  @media (max-width: 720px) { .subject-row { grid-template-columns: 1fr 1fr 1fr; grid-template-areas: "subject subject del" "mode score score2"; } .subject-row .col-subject { grid-area: subject; } .subject-row .col-mode { grid-area: mode; } .subject-row .col-del { grid-area: del; } }
+  select, input { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 7px 8px; font: inherit; width: 100%; }
+  select:focus, input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  button { background: var(--accent); color: var(--accent-text); border: none; padding: 9px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; font: inherit; }
+  button.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  button.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 4px 8px; font-size: 13px; }
+  button:hover { filter: brightness(1.1); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .toggle { display: inline-flex; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 2px; }
+  .toggle button { background: transparent; color: var(--text-dim); padding: 4px 10px; font-size: 13px; border-radius: 4px; font-weight: 500; }
+  .toggle button.active { background: var(--accent); color: var(--accent-text); }
+  .add-row { margin-top: 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .eligibility { background: var(--bg-panel-2); border-left: 3px solid var(--success); padding: 10px 14px; border-radius: 6px; margin-top: 12px; font-size: 14px; }
+  .eligibility.fail { border-left-color: var(--danger); }
+  .eligibility.fail strong { color: var(--danger); }
+  .eligibility.warn { border-left-color: var(--warning); }
+  .eligibility ul { margin: 6px 0 0; padding-left: 18px; }
+
+  .result-hero { text-align: center; padding: 20px 10px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 10px; margin-bottom: 16px; }
+  .result-hero .label { color: var(--text-mute); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+  .result-hero .atar { font-size: 64px; font-weight: 800; color: var(--accent); line-height: 1; margin: 6px 0; }
+  .result-hero .range { color: var(--text-dim); font-size: 16px; }
+  .result-hero .blurb { color: var(--text-dim); font-size: 14px; margin-top: 8px; max-width: 460px; margin-left: auto; margin-right: auto; }
+
+  .pipeline { display: grid; gap: 10px; }
+  .stage { background: var(--bg-panel-2); border-radius: 8px; padding: 12px 14px; border-left: 3px solid var(--info); }
+  .stage h3 { margin: 0 0 8px; font-size: 14px; color: var(--text-dim); display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .stage h3 .n { background: var(--info); color: white; width: 20px; height: 20px; border-radius: 50%; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+  .stage .desc { font-size: 12px; color: var(--text-mute); margin-bottom: 6px; }
+  .scaled-list { display: grid; grid-template-columns: 1fr 70px 70px 90px; gap: 4px; font-size: 13px; }
+  .scaled-list .head { color: var(--text-mute); font-size: 11px; text-transform: uppercase; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+  .scaled-list .row { display: contents; }
+  .scaled-list .row > div { padding: 5px 2px; border-bottom: 1px dotted var(--border); }
+  .scaled-list .row.top5 > div { color: var(--success); font-weight: 600; }
+  .scaled-list .row.dropped > div { color: var(--text-mute); text-decoration: line-through; }
+  .scaled-list .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .delta-up { color: var(--success); }
+  .delta-down { color: var(--danger); }
+
+  .tea-display { font-size: 28px; font-weight: 700; color: var(--accent); }
+  .tea-display .max { color: var(--text-mute); font-size: 14px; font-weight: 400; }
+
+  .sensitivity { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 13px; }
+  .sensitivity .name { color: var(--text-dim); }
+  .sensitivity .val { font-variant-numeric: tabular-nums; color: var(--success); font-weight: 600; text-align: right; }
+  .sensitivity .val.zero { color: var(--text-mute); font-weight: 400; }
+
+  .scenarios { display: grid; gap: 10px; }
+  .scenario-card { background: var(--bg-panel-2); padding: 12px; border-radius: 8px; display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 10px; }
+  .scenario-card .name { font-weight: 600; }
+  .scenario-card .atar-mini { color: var(--accent); font-size: 18px; font-weight: 700; }
+  .scenario-card .diff { font-size: 13px; }
+  .scenario-card.active { outline: 2px solid var(--accent); }
+
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .compare .col { background: var(--bg-panel-2); border-radius: 8px; padding: 12px; }
+  .compare h4 { margin: 0 0 6px; font-size: 14px; }
+  .compare .row { display: grid; grid-template-columns: 1fr auto; font-size: 13px; padding: 3px 0; border-bottom: 1px dotted var(--border); }
+  .compare .atar-big { font-size: 26px; font-weight: 800; color: var(--accent); }
+
+  .show-math { margin-top: 10px; }
+  details summary { cursor: pointer; color: var(--info); font-size: 13px; padding: 6px 0; }
+  details[open] summary { margin-bottom: 8px; }
+  .math-body { font-size: 13px; color: var(--text-dim); line-height: 1.7; }
+  .math-body code { background: var(--bg); padding: 2px 6px; border-radius: 4px; color: var(--accent); }
+
+  .disclaimer { font-size: 12px; color: var(--text-mute); border-top: 1px solid var(--border); padding-top: 14px; margin-top: 18px; line-height: 1.6; }
+  .disclaimer a { color: var(--info); }
+  .placeholder { color: var(--text-mute); text-align: center; padding: 30px 10px; font-size: 14px; }
+  .pill { display: inline-block; background: var(--bg); color: var(--text-mute); border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .pill.gen { color: var(--info); border-color: var(--info); }
+  .pill.app { color: var(--warning); border-color: var(--warning); }
+  .pill.vet { color: var(--success); border-color: var(--success); }
+  .pill.see { color: #c084fc; border-color: #c084fc; }
+  .pill.english { background: var(--info); color: white; border-color: var(--info); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>ATAR Sandbox <span class="badge">QLD &middot; 2024 scaling</span></h1>
+  <p class="sub">A transparent Queensland ATAR estimator. Enter your subjects and scores &mdash; see every step of the math: raw to scaled, top-5 selection, TEA, and ATAR. No email, no lead funnel, no black box.</p>
+</header>
+
+<section class="panel" id="input-panel">
+  <h2><span class="step">1</span> Enter your subjects</h2>
+  <p class="sub" style="margin: 0 0 12px;">Add 5 subjects (you can add more &mdash; only the best 5 are used). English (any qualifying type) is required. At least 4 must be General subjects, OR 4 General + 1 Applied, OR 4 General + 1 VET.</p>
+
+  <div id="subjects"></div>
+
+  <div class="add-row">
+    <button id="add-subject">+ Add subject</button>
+    <button class="ghost" id="reset">Reset</button>
+    <span class="sub" id="subject-count"></span>
+  </div>
+
+  <div class="eligibility" id="eligibility"></div>
+</section>
+
+<section class="panel" id="results-panel">
+  <h2><span class="step">2</span> Your estimated ATAR</h2>
+
+  <div class="result-hero" id="result-hero">
+    <div class="placeholder">Add subjects above to see your estimate.</div>
+  </div>
+
+  <div class="grid-2">
+    <div>
+      <h3 style="margin: 0 0 10px; font-size: 15px;">The math, step by step</h3>
+      <div class="pipeline" id="pipeline"></div>
+    </div>
+    <div>
+      <h3 style="margin: 0 0 10px; font-size: 15px;">Which subject moves your ATAR most?</h3>
+      <p class="sub" style="margin: 0 0 10px;">A 1-point lift in each subject's raw score, holding everything else constant. Subjects already maxed at 100, or not in your top 5, can't help here.</p>
+      <div class="sensitivity" id="sensitivity"></div>
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="scenarios-panel">
+  <h2><span class="step">3</span> Save &amp; compare scenarios</h2>
+  <p class="sub" style="margin: 0 0 12px;">Save your current setup, tweak the inputs, then save again. Compare two side-by-side to see exactly what changed.</p>
+  <div class="add-row" style="margin-top: 0;">
+    <input type="text" id="scenario-name" placeholder="Name this scenario (e.g. 'Realistic case')" style="max-width: 260px;">
+    <button id="save-scenario">Save scenario</button>
+    <button class="ghost" id="share-link">Copy share link</button>
+  </div>
+  <div class="scenarios" id="scenarios" style="margin-top: 14px;"></div>
+  <div id="compare-wrap"></div>
+</section>
+
+<section class="panel">
+  <h2>How this works</h2>
+  <div class="math-body">
+    <p><strong>Step 1 &mdash; Raw to scaled.</strong> For each General/SEE subject, your raw score (0&ndash;100) is interpolated through QTAC's published 25th/50th/75th/90th/99th percentile breakpoints from the <a href="https://qtac-files.s3.ap-southeast-2.amazonaws.com/ATAR_Report_2024.pdf" target="_blank">2024 ATAR Report</a>, Table 6. Applied subjects use the letter-grade to scaled mapping in Table 8. VET qualifications get a fixed scaled score by AQF level from Table 9 (Cert III = 39.11, Cert IV = 52.02, Diploma = 59.14).</p>
+    <p><strong>Step 2 &mdash; Pick the top 5.</strong> The Tertiary Entrance Aggregate (TEA) is the sum of your best 5 scaled scores, subject to eligibility rules: you need a passing English (grade C or higher in any of English / EAL / Literature / English &amp; Lit Extension / Essential English) but English only counts in your TEA if it's in your top 5. Precluded combos (e.g. you can't include Essential English with a General English) are filtered out. Source: <a href="https://www.qtac.edu.au/wp-content/uploads/2020/07/Calculating_ATAR_in_QLDJuly2020.pdf" target="_blank">Calculating the ATAR in Queensland</a>, &sect;4.</p>
+    <p><strong>Step 3 &mdash; TEA to ATAR.</strong> We map your TEA to a percentile-among-ATAR-eligible-students using a calibrated curve, then read off the ATAR band from the 2024 ATAR Report's Table 14 cumulative student counts. We do <em>not</em> replicate QTAC's full cubic-spline participation model (its inputs aren't public) &mdash; expect <strong>&plusmn;2 to 3 ATAR points</strong> of variance vs. QTAC's official Navigator for the same input. This is an industry rule-of-thumb, not a QTAC-published figure.</p>
+    <p><strong>What this tool can't see:</strong> school-based assessment context, future cohort variation, external exam variance. The estimate uses 2024 scaling data; 2025 cohort outcomes will differ.</p>
+  </div>
+  <div class="disclaimer">
+    <strong>Disclaimer.</strong> This is an estimator, not a prediction. Quoting QTAC directly: <em>"This estimate is based on previous years' results and does not predict the ATAR that will be received in the future. QTAC does not endorse the use of ATAR Navigator estimates as a prediction of the ATAR."</em> Source: <a href="https://atar-navigator.qtac.edu.au/" target="_blank">QTAC ATAR Navigator</a>. ATAR Sandbox is an independent transparency-focused tool; it is not affiliated with QTAC or QCAA. For the official QTAC tool, see the link above.
+  </div>
+</section>
+
+</div>
+
+<script>
+const DATA = { QLD: {} };
+
+DATA.QLD.subjects = [
+  { code: '0023', name: 'Aboriginal and Torres Strait Islander Studies', type: 'GEN', bp: [[55,15.02],[62,23.98],[75,48.05],[88,73.06],[91,77.66]] },
+  { code: '0060', name: 'Accounting', type: 'GEN', bp: [[63,65.43],[74,79.25],[85,88.51],[92,92.33],[98,94.64]] },
+  { code: '0055', name: 'Aerospace Systems', type: 'GEN', bp: [[56,50.20],[67,66.52],[79,80.64],[88,87.89],[97,92.67]] },
+  { code: '0051', name: 'Agricultural Science', type: 'GEN', bp: [[68,41.15],[77,58.37],[85,72.23],[90,79.29],[93,82.84]] },
+  { code: '0020', name: 'Ancient History', type: 'GEN', bp: [[60,49.83],[71,67.22],[83,81.89],[91,88.45],[98,92.39]] },
+  { code: '0042', name: 'Biology', type: 'GEN', bp: [[70,58.87],[80,76.29],[89,86.96],[95,91.56],[99,93.75]] },
+  { code: '0066', name: 'Business', type: 'GEN', bp: [[58,49.63],[68,63.16],[79,75.91],[87,83.07],[96,88.98]] },
+  { code: '0040', name: 'Chemistry', type: 'GEN', bp: [[76,76.74],[85,90.45],[92,95.56],[95,96.83],[99,97.99]] },
+  { code: '0011', name: 'Chinese', type: 'GEN', family: 'chinese', bp: [[84,81.25],[92,87.21],[96,89.54],[98,90.55],[100,91.48]] },
+  { code: '0085', name: 'Dance', type: 'GEN', bp: [[71,42.67],[81,56.51],[90,68.21],[96,74.99],[100,78.93]] },
+  { code: '0048', name: 'Design', type: 'GEN', bp: [[58,48.42],[69,61.67],[82,75.26],[90,81.82],[98,86.94]] },
+  { code: '0049', name: 'Digital Solutions', type: 'GEN', bp: [[62,60.65],[76,79.35],[87,88.73],[93,92.09],[97,93.80]] },
+  { code: '0088', name: 'Drama', type: 'GEN', bp: [[66,44.94],[78,63.24],[89,77.32],[95,83.19],[100,87.10]] },
+  { code: '0043', name: 'Earth and Environmental Science', type: 'GEN', bp: [[71,51.44],[78,66.21],[85,78.38],[90,84.91],[95,89.72]] },
+  { code: '0027', name: 'Economics', type: 'GEN', bp: [[66,71.30],[78,87.21],[87,93.56],[93,96.01],[98,97.34]] },
+  { code: '0074', name: 'Engineering', type: 'GEN', bp: [[63,70.03],[74,84.71],[85,92.93],[92,95.79],[98,97.33]] },
+  { code: '0001', name: 'English', type: 'GEN', family: 'english-gen', english: true, bp: [[59,53.05],[70,70.06],[82,83.82],[91,90.38],[99,94.10]] },
+  { code: '0002', name: 'English and Literature Extension', type: 'GEN', family: 'english-ext', english: true, bp: [[81,85.45],[89,91.49],[95,94.42],[98,95.50],[100,96.11]] },
+  { code: '0003', name: 'English as an Additional Language', type: 'GEN', family: 'english-gen', english: true, bp: [[59,50.20],[69,69.59],[79,83.85],[89,92.18],[99,96.40]] },
+  { code: '0093', name: 'Film Television and New Media', type: 'GEN', bp: [[62,42.22],[73,56.53],[84,69.82],[93,78.75],[100,84.24]] },
+  { code: '0069', name: 'Food and Nutrition', type: 'GEN', bp: [[55,44.02],[67,58.24],[79,71.22],[88,79.18],[97,85.40]] },
+  { code: '0005', name: 'French', type: 'GEN', bp: [[75,88.69],[84,94.73],[92,97.41],[96,98.19],[99,98.62]] },
+  { code: '0052', name: 'General Mathematics', type: 'GEN', family: 'maths-gen', bp: [[60,50.49],[68,60.48],[77,70.72],[85,78.37],[94,85.12]] },
+  { code: '0024', name: 'Geography', type: 'GEN', bp: [[59,56.08],[69,70.98],[79,82.41],[88,89.37],[96,93.39]] },
+  { code: '0006', name: 'German', type: 'GEN', bp: [[77,86.82],[85,93.46],[91,96.23],[95,97.41],[100,98.39]] },
+  { code: '0067', name: 'Health', type: 'GEN', bp: [[58,46.95],[68,59.78],[80,73.46],[88,80.74],[96,86.38]] },
+  { code: '0008', name: 'Italian', type: 'GEN', bp: [[74,82.40],[82,89.29],[90,93.69],[95,95.51],[98,96.35]] },
+  { code: '0009', name: 'Japanese', type: 'GEN', bp: [[69,74.96],[81,86.88],[91,92.77],[97,95.02],[100,95.88]] },
+  { code: '0029', name: 'Legal Studies', type: 'GEN', bp: [[57,54.74],[68,68.84],[80,81.00],[89,87.47],[97,91.54]] },
+  { code: '0026', name: 'Literature', type: 'GEN', family: 'english-gen', english: true, bp: [[71,72.33],[81,85.47],[90,92.42],[96,95.20],[99,96.20]] },
+  { code: '0047', name: 'Marine Science', type: 'GEN', bp: [[65,47.32],[72,60.41],[80,73.65],[86,81.49],[92,87.39]] },
+  { code: '0053', name: 'Mathematical Methods', type: 'GEN', family: 'maths-methods', bp: [[67,79.76],[78,89.65],[88,94.66],[95,96.69],[100,97.66]] },
+  { code: '0021', name: 'Modern History', type: 'GEN', bp: [[64,56.21],[75,73.41],[86,85.59],[93,90.62],[98,93.19]] },
+  { code: '0091', name: 'Music', type: 'GEN', bp: [[70,53.97],[83,72.23],[93,82.76],[97,85.98],[100,88.05]] },
+  { code: '0094c', name: 'Music Extension (Composition)', type: 'GEN', bp: [[85,73.34],[95,83.28],[99,86.33],[100,87.01],[100,87.01]] },
+  { code: '0094p', name: 'Music Extension (Performance)', type: 'GEN', bp: [[84,65.65],[92,75.73],[98,81.84],[99,82.73],[100,83.59]] },
+  { code: '0033', name: 'Philosophy and Reason', type: 'GEN', bp: [[65,69.69],[76,84.01],[87,92.31],[94,95.31],[99,96.73]] },
+  { code: '0068', name: 'Physical Education', type: 'GEN', bp: [[61,46.46],[71,59.75],[81,71.75],[89,79.60],[97,85.71]] },
+  { code: '0041', name: 'Physics', type: 'GEN', bp: [[74,73.96],[84,89.64],[92,95.47],[97,97.35],[100,98.09]] },
+  { code: '0079', name: 'Psychology', type: 'GEN', bp: [[71,55.73],[79,69.92],[87,81.10],[92,86.29],[97,90.23]] },
+  { code: '0018', name: 'Spanish', type: 'GEN', bp: [[68,71.45],[76,80.57],[86,88.63],[93,92.38],[98,94.32]] },
+  { code: '0054', name: 'Specialist Mathematics', type: 'GEN', family: 'maths-specialist', bp: [[73,89.11],[83,95.35],[90,97.50],[95,98.40],[99,98.89]] },
+  { code: '0086', name: 'Study of Religion', type: 'GEN', bp: [[67,64.68],[77,78.80],[87,88.29],[93,92.02],[99,94.63]] },
+  { code: '0080', name: 'Visual Art', type: 'GEN', bp: [[58,46.37],[71,62.30],[84,75.96],[93,83.19],[100,87.52]] },
+  { code: '4011', name: 'Chinese (SEE)', type: 'SEE', family: 'chinese', bp: [[80,77.55],[88,84.47],[93,87.83],[96,89.54],[99,91.03]] },
+  { code: '4013', name: 'Korean (SEE)', type: 'SEE', bp: [[68,72.58],[81,84.01],[87,87.82],[92,90.37],[96,92.06]] },
+  { code: '4012', name: 'Vietnamese (SEE)', type: 'SEE', bp: [[76,65.76],[83,74.37],[90,81.43],[93,83.96],[99,88.17]] },
+];
+
+DATA.QLD.applied = [
+  { code: '6400', name: 'Agricultural Practices', type: 'APP', grades: { C: 8.39, B: 20.58, A: 42.31 } },
+  { code: '6401', name: 'Aquatic Practices', type: 'APP', grades: { C: 7.77, B: 21.10, A: 45.91 } },
+  { code: '6410', name: 'Arts in Practice', type: 'APP', grades: { C: 11.59, B: 28.18, A: 54.03 } },
+  { code: '6416', name: 'Building and Construction Skills', type: 'APP', grades: { C: 6.87, B: 17.57, A: 38.12 } },
+  { code: '6402', name: 'Business Studies', type: 'APP', grades: { C: 9.74, B: 25.13, A: 51.07 } },
+  { code: '6411', name: 'Dance in Practice', type: 'APP', grades: { C: 8.52, B: 22.23, A: 46.70 } },
+  { code: '6412', name: 'Drama in Practice', type: 'APP', grades: { C: 8.76, B: 22.22, A: 45.94 } },
+  { code: '6403', name: 'Early Childhood Studies', type: 'APP', grades: { C: 10.05, B: 23.09, A: 44.64 } },
+  { code: '6417', name: 'Engineering Skills', type: 'APP', grades: { C: 7.39, B: 19.89, A: 43.57 } },
+  { code: '6121', name: 'Essential English', type: 'APP', family: 'english-ess', english: true, grades: { C: 9.00, B: 20.62, A: 40.55 } },
+  { code: '6140', name: 'Essential Mathematics', type: 'APP', family: 'maths-ess', grades: { C: 10.29, B: 22.68, A: 42.88 } },
+  { code: '6404', name: 'Fashion', type: 'APP', grades: { C: 18.68, B: 37.40, A: 60.83 } },
+  { code: '6418', name: 'Furnishing Skills', type: 'APP', grades: { C: 6.90, B: 20.03, A: 45.84 } },
+  { code: '6405', name: 'Hospitality Practices', type: 'APP', grades: { C: 11.07, B: 27.57, A: 53.77 } },
+  { code: '6419', name: 'Industrial Graphics Skills', type: 'APP', grades: { C: 11.43, B: 26.46, A: 50.09 } },
+  { code: '6420', name: 'Industrial Technology Skills', type: 'APP', grades: { C: 9.99, B: 23.99, A: 47.28 } },
+  { code: '6406', name: 'Information and Communication Technology', type: 'APP', grades: { C: 11.65, B: 29.57, A: 57.19 } },
+  { code: '6413', name: 'Media Arts in Practice', type: 'APP', grades: { C: 11.18, B: 28.39, A: 55.51 } },
+  { code: '6414', name: 'Music in Practice', type: 'APP', grades: { C: 7.43, B: 22.44, A: 51.05 } },
+  { code: '6408', name: 'Religion and Ethics', type: 'APP', grades: { C: 22.85, B: 50.33, A: 77.61 } },
+  { code: '6421', name: 'Science in Practice', type: 'APP', grades: { C: 10.15, B: 23.39, A: 45.20 } },
+  { code: '6409', name: 'Social and Community Studies', type: 'APP', grades: { C: 6.91, B: 20.57, A: 47.46 } },
+  { code: '6407', name: 'Sport and Recreation', type: 'APP', grades: { C: 7.55, B: 22.24, A: 50.02 } },
+  { code: '6422', name: 'Tourism', type: 'APP', grades: { C: 9.40, B: 23.83, A: 48.53 } },
+  { code: '6415', name: 'Visual Arts in Practice', type: 'APP', grades: { C: 10.97, B: 26.82, A: 52.14 } },
+];
+
+DATA.QLD.vet = [
+  { code: 'CERTIII', name: 'Certificate III (VET)', type: 'VET', scaled: 39.11 },
+  { code: 'CERTIV', name: 'Certificate IV (VET)', type: 'VET', scaled: 52.02 },
+  { code: 'DIPLOMA', name: 'Diploma (VET)', type: 'VET', scaled: 59.14 },
+];
+
+// TEA to ATAR calibration anchors.
+// TEA 491.51 corresponds to ATAR 99.95 per QTAC technical doc worked example.
+// TEA ~340 corresponds to ATAR 80, calibrated against Table 14 (~49% of eligible students above 80).
+const TEA_ATAR_CURVE = [
+  [495, 99.95],
+  [475, 99.50],
+  [460, 99.00],
+  [445, 98.00],
+  [425, 96.00],
+  [405, 93.00],
+  [385, 89.50],
+  [365, 86.00],
+  [340, 80.00],
+  [315, 75.00],
+  [290, 69.00],
+  [265, 63.00],
+  [240, 56.00],
+  [215, 49.00],
+  [190, 41.00],
+  [165, 33.00],
+  [145, 30.00],
+  [0, 30.00],
+];
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function interpolate(x, points) {
+  if (x <= points[0][0]) return points[0][1];
+  if (x >= points[points.length-1][0]) return points[points.length-1][1];
+  for (let i = 1; i < points.length; i++) {
+    if (x <= points[i][0]) {
+      const [x0, y0] = points[i-1];
+      const [x1, y1] = points[i];
+      const t = (x - x0) / (x1 - x0);
+      return y0 + t * (y1 - y0);
+    }
+  }
+  return points[points.length-1][1];
+}
+
+function getSubjectDef(code) {
+  return DATA.QLD.subjects.find(s => s.code === code)
+      || DATA.QLD.applied.find(s => s.code === code)
+      || DATA.QLD.vet.find(s => s.code === code);
+}
+
+function rawToScaled(subjEntry) {
+  const def = getSubjectDef(subjEntry.code);
+  if (!def) return { scaled: 0, scaledLow: 0, scaledHigh: 0 };
+  if (def.type === 'VET') {
+    return { scaled: def.scaled, scaledLow: def.scaled, scaledHigh: def.scaled };
+  }
+  if (def.type === 'APP') {
+    const grade = subjEntry.grade || 'C';
+    const scaled = def.grades[grade] !== undefined ? def.grades[grade] : def.grades.C;
+    return { scaled, scaledLow: scaled, scaledHigh: scaled };
+  }
+  if (subjEntry.mode === 'range') {
+    const lo = clamp(+subjEntry.rangeLow || 0, 0, 100);
+    const hi = clamp(+subjEntry.rangeHigh || 0, 0, 100);
+    const mid = (lo + hi) / 2;
+    return {
+      scaled: interpolate(mid, def.bp),
+      scaledLow: interpolate(Math.min(lo,hi), def.bp),
+      scaledHigh: interpolate(Math.max(lo,hi), def.bp),
+    };
+  }
+  const raw = clamp(+subjEntry.raw || 0, 0, 100);
+  const scaled = interpolate(raw, def.bp);
+  return { scaled, scaledLow: scaled, scaledHigh: scaled };
+}
+
+function choose(arr, k) {
+  if (k > arr.length) return [];
+  if (k === 0) return [[]];
+  if (k === arr.length) return [arr.slice()];
+  const [head, ...rest] = arr;
+  return [
+    ...choose(rest, k-1).map(c => [head, ...c]),
+    ...choose(rest, k),
+  ];
+}
+
+function familiesValid(combo) {
+  const seen = {};
+  for (const s of combo) {
+    const def = getSubjectDef(s.code);
+    if (!def || !def.family) continue;
+    if (def.family === 'english-gen' || def.family === 'english-ext') continue;
+    if (seen[def.family]) return false;
+    seen[def.family] = true;
+  }
+  const hasEssEng = combo.some(s => getSubjectDef(s.code) && getSubjectDef(s.code).family === 'english-ess');
+  const hasGenEng = combo.some(s => { const f = getSubjectDef(s.code) && getSubjectDef(s.code).family; return f === 'english-gen' || f === 'english-ext'; });
+  if (hasEssEng && hasGenEng) return false;
+  return true;
+}
+
+function pickBestCombination(subjects) {
+  const hasEnglish = subjects.some(s => {
+    const def = getSubjectDef(s.code);
+    return def && def.english;
+  });
+  if (!hasEnglish) {
+    return { combo: [], dropped: subjects, tea: 0, teaLow: 0, teaHigh: 0, error: 'No qualifying English subject. You need a grade C+ in English, EAL, Literature, English & Lit Extension, or Essential English.' };
+  }
+  const generalCount = subjects.filter(s => {
+    const def = getSubjectDef(s.code);
+    return def && (def.type === 'GEN' || def.type === 'SEE');
+  }).length;
+  if (generalCount < 4) {
+    return { combo: [], dropped: subjects, tea: 0, teaLow: 0, teaHigh: 0, error: 'You have ' + generalCount + ' General/SEE subject' + (generalCount===1?'':'s') + '. You need at least 4 General subjects (Extension/SEE count as General).' };
+  }
+
+  const generals = subjects.filter(s => { const d = getSubjectDef(s.code); return d && (d.type === 'GEN' || d.type === 'SEE'); });
+  const applieds = subjects.filter(s => { const d = getSubjectDef(s.code); return d && d.type === 'APP'; });
+  const vets = subjects.filter(s => { const d = getSubjectDef(s.code); return d && d.type === 'VET'; });
+
+  const allCombos = [];
+
+  if (generals.length >= 5) {
+    for (const c of choose(generals, 5)) {
+      if (familiesValid(c)) allCombos.push({ combo: c, scheme: '5 General' });
+    }
+  }
+  if (generals.length >= 4 && applieds.length >= 1) {
+    for (const g4 of choose(generals, 4)) {
+      for (const a of applieds) {
+        const c = [...g4, a];
+        if (familiesValid(c)) allCombos.push({ combo: c, scheme: '4 General + 1 Applied' });
+      }
+    }
+  }
+  if (generals.length >= 4 && vets.length >= 1) {
+    for (const g4 of choose(generals, 4)) {
+      for (const v of vets) {
+        const c = [...g4, v];
+        if (familiesValid(c)) allCombos.push({ combo: c, scheme: '4 General + 1 VET' });
+      }
+    }
+  }
+
+  if (!allCombos.length) {
+    return { combo: [], dropped: subjects, tea: 0, teaLow: 0, teaHigh: 0, error: 'No legal 5-subject combination found. Check that you have at least one English subject and 4 General subjects.' };
+  }
+
+  let best = null;
+  for (const c of allCombos) {
+    const tea = c.combo.reduce((sum, s) => sum + s.scaled, 0);
+    if (!best || tea > best.tea) {
+      best = { ...c, tea };
+    }
+  }
+
+  const teaLow = best.combo.reduce((s, x) => s + x.scaledLow, 0);
+  const teaHigh = best.combo.reduce((s, x) => s + x.scaledHigh, 0);
+
+  const inComboCodes = best.combo.map(s => s.code);
+  const dropped = subjects.filter(s => !inComboCodes.includes(s.code));
+
+  return { combo: best.combo, dropped, tea: best.tea, teaLow, teaHigh, schemeUsed: best.scheme };
+}
+
+function teaToAtar(tea) {
+  return interpolate(tea, [...TEA_ATAR_CURVE].sort((a,b) => a[0]-b[0]));
+}
+
+function calculate(subjectEntries) {
+  const withScaled = subjectEntries.map(e => {
+    const def = getSubjectDef(e.code);
+    const sc = rawToScaled(e);
+    return {
+      ...e,
+      scaled: sc.scaled, scaledLow: sc.scaledLow, scaledHigh: sc.scaledHigh,
+      name: def ? def.name : e.code,
+      type: def ? def.type : '?',
+      english: def ? !!def.english : false,
+      family: def ? def.family : undefined,
+    };
+  });
+  const sel = pickBestCombination(withScaled);
+  if (sel.error) return { subjects: withScaled, ...sel, atar: null, atarLow: null, atarHigh: null };
+  const atar = teaToAtar(sel.tea);
+  const atarLow = teaToAtar(sel.teaLow);
+  const atarHigh = teaToAtar(sel.teaHigh);
+  return { subjects: withScaled, ...sel, atar, atarLow, atarHigh };
+}
+
+function sensitivity(subjectEntries) {
+  const base = calculate(subjectEntries);
+  if (base.atar === null) return [];
+  const out = [];
+  for (let i = 0; i < subjectEntries.length; i++) {
+    const e = subjectEntries[i];
+    const def = getSubjectDef(e.code);
+    if (!def) continue;
+    let bumped;
+    let label = '+1 raw point';
+    if (def.type === 'GEN' || def.type === 'SEE') {
+      const raw = +e.raw || 0;
+      if (raw >= 100) { out.push({ code: e.code, name: def.name, delta: 0, atMax: true, label }); continue; }
+      bumped = [...subjectEntries];
+      bumped[i] = { ...e, mode: 'single', raw: Math.min(100, raw + 1) };
+    } else if (def.type === 'APP') {
+      const grade = e.grade || 'C';
+      const nextGrade = { C: 'B', B: 'A', A: 'A' }[grade];
+      if (grade === 'A') { out.push({ code: e.code, name: def.name, delta: 0, atMax: true, label: 'Already an A' }); continue; }
+      label = grade + ' to ' + nextGrade;
+      bumped = [...subjectEntries];
+      bumped[i] = { ...e, grade: nextGrade };
+    } else {
+      out.push({ code: e.code, name: def.name, delta: 0, atMax: true, label: 'Fixed (VET)' });
+      continue;
+    }
+    const post = calculate(bumped);
+    const delta = (post.atar || 0) - (base.atar || 0);
+    out.push({ code: e.code, name: def.name, delta, atMax: false, label });
+  }
+  return out.sort((a, b) => b.delta - a.delta);
+}
+
+const state = { entries: [], scenarios: [], compare: null };
+let nextId = 1;
+function id() { return 'e' + (nextId++); }
+
+const STORAGE_KEY = 'atar-sandbox-v1';
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved.entries) state.entries = saved.entries;
+    if (saved.scenarios) state.scenarios = saved.scenarios;
+  } catch (e) {}
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      entries: state.entries,
+      scenarios: state.scenarios,
+    }));
+  } catch (e) {}
+}
+
+function loadStateFromHash() {
+  if (!location.hash || location.hash.length < 2) return false;
+  try {
+    const data = JSON.parse(decodeURIComponent(atob(location.hash.slice(1))));
+    if (data.entries) {
+      state.entries = data.entries.map(e => ({ ...e, id: id() }));
+      return true;
+    }
+  } catch (e) {}
+  return false;
+}
+
+function buildShareLink() {
+  const data = { entries: state.entries };
+  const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
+  return location.origin + location.pathname + '#' + encoded;
+}
+
+function addEntry() {
+  state.entries.push({ id: id(), code: '', mode: 'single', raw: 75, rangeLow: 70, rangeHigh: 80, grade: 'C' });
+  render();
+}
+
+function removeEntry(eid) {
+  state.entries = state.entries.filter(e => e.id !== eid);
+  render();
+}
+
+function updateEntry(eid, patch) {
+  const idx = state.entries.findIndex(e => e.id === eid);
+  if (idx === -1) return;
+  state.entries[idx] = { ...state.entries[idx], ...patch };
+  render();
+}
+
+function renderSubjectRows() {
+  const wrap = document.getElementById('subjects');
+  if (!state.entries.length) {
+    wrap.innerHTML = '<div class="placeholder">No subjects yet. Click "Add subject" to start.</div>';
+    return;
+  }
+  const allSubjects = [...DATA.QLD.subjects, ...DATA.QLD.applied, ...DATA.QLD.vet]
+    .sort((a, b) => {
+      const order = { GEN: 0, SEE: 1, APP: 2, VET: 3 };
+      if (order[a.type] !== order[b.type]) return order[a.type] - order[b.type];
+      return a.name.localeCompare(b.name);
+    });
+  const usedCodes = state.entries.map(e => e.code);
+
+  wrap.innerHTML = state.entries.map((e) => {
+    const def = getSubjectDef(e.code);
+    const typeTag = def ? '<span class="pill ' + def.type.toLowerCase() + '">' + def.type + '</span>' : '';
+    const englishTag = (def && def.english) ? '<span class="pill english" title="Counts as qualifying English">ENG</span>' : '';
+    const subjectSelect = '<select onchange="updateEntry(\'' + e.id + '\', { code: this.value })" aria-label="Subject"><option value="">&mdash; Choose subject &mdash;</option>' +
+      allSubjects.map(s => {
+        const taken = usedCodes.includes(s.code) && s.code !== e.code;
+        return '<option value="' + s.code + '"' + (s.code === e.code ? ' selected' : '') + (taken ? ' disabled' : '') + '>' + s.name + ' &middot; ' + s.type + (taken ? ' (already added)' : '') + '</option>';
+      }).join('') + '</select>';
+
+    let scoreInputs = '';
+    if (!def) {
+      scoreInputs = '<div class="sub" style="grid-column: span 3;">Pick a subject first</div>';
+    } else if (def.type === 'VET') {
+      scoreInputs = '<div class="sub" style="grid-column: span 3;">Fixed scaled score: <strong>' + def.scaled + '</strong></div>';
+    } else if (def.type === 'APP') {
+      scoreInputs = '<div></div>' +
+        '<select onchange="updateEntry(\'' + e.id + '\', { grade: this.value })" aria-label="Grade">' +
+        '<option value="A"' + (e.grade==='A'?' selected':'') + '>Grade A</option>' +
+        '<option value="B"' + (e.grade==='B'?' selected':'') + '>Grade B</option>' +
+        '<option value="C"' + (e.grade==='C'?' selected':'') + '>Grade C</option>' +
+        '</select><div></div>';
+    } else {
+      const modeToggle = '<div class="toggle col-mode">' +
+        '<button class="' + (e.mode==='single'?'active':'') + '" onclick="updateEntry(\'' + e.id + '\', { mode: \'single\' })">Single</button>' +
+        '<button class="' + (e.mode==='range'?'active':'') + '" onclick="updateEntry(\'' + e.id + '\', { mode: \'range\' })">Range</button></div>';
+      if (e.mode === 'range') {
+        scoreInputs = modeToggle +
+          '<input type="number" min="0" max="100" value="' + e.rangeLow + '" onchange="updateEntry(\'' + e.id + '\', { rangeLow: +this.value })" aria-label="Range low">' +
+          '<input type="number" min="0" max="100" value="' + e.rangeHigh + '" onchange="updateEntry(\'' + e.id + '\', { rangeHigh: +this.value })" aria-label="Range high">';
+      } else {
+        scoreInputs = modeToggle +
+          '<input type="number" min="0" max="100" value="' + e.raw + '" onchange="updateEntry(\'' + e.id + '\', { raw: +this.value })" aria-label="Raw score">' +
+          '<div></div>';
+      }
+    }
+
+    return '<div class="subject-row">' +
+      '<div class="col-subject">' + subjectSelect + '<div style="margin-top: 4px;">' + typeTag + ' ' + englishTag + '</div></div>' +
+      scoreInputs +
+      '<div class="col-del"><button class="danger" onclick="removeEntry(\'' + e.id + '\')" aria-label="Remove">&times;</button></div>' +
+      '</div>';
+  }).join('');
+}
+
+function renderEligibility(result) {
+  const el = document.getElementById('eligibility');
+  if (!state.entries.length || state.entries.some(e => !e.code)) {
+    el.className = 'eligibility warn';
+    el.innerHTML = '<strong>Pick subjects to check eligibility.</strong> You need a qualifying English + 4 General subjects (or 4G + 1 Applied/VET).';
+    return;
+  }
+  if (result.error) {
+    el.className = 'eligibility fail';
+    el.innerHTML = '<strong>Not yet ATAR-eligible.</strong> ' + result.error;
+    return;
+  }
+  el.className = 'eligibility';
+  el.innerHTML = '<strong>ATAR-eligible</strong> &middot; scheme used: <strong>' + result.schemeUsed + '</strong>. The English-grade-C+ rule is satisfied by your subject set.';
+}
+
+function fmtAtar(v) {
+  if (v === null || v === undefined) return '&mdash;';
+  if (v <= 30) return '30 or below';
+  return (Math.round(v * 20) / 20).toFixed(2);
+}
+
+function renderResult(result) {
+  const hero = document.getElementById('result-hero');
+  if (result.atar === null) {
+    hero.innerHTML = '<div class="placeholder">' + (result.error ? '&#9888; ' + result.error : 'Complete the subject list to see your estimate.') + '</div>';
+    return;
+  }
+  const hasRange = state.entries.some(e => e.mode === 'range');
+  const rangeStr = hasRange
+    ? '<div class="range">Range mode: <strong>' + fmtAtar(result.atarLow) + '</strong> to <strong>' + fmtAtar(result.atarHigh) + '</strong></div>'
+    : '<div class="range">Indicative range: ' + fmtAtar(Math.max(0, result.atar - 2.5)) + ' to ' + fmtAtar(Math.min(99.95, result.atar + 2.5)) + ' (&plusmn;2&ndash;3 ATAR points typical estimator variance)</div>';
+  const blurb = atarBlurb(result.atar);
+  hero.innerHTML =
+    '<div class="label">Estimated ATAR (QLD &middot; 2024 scaling)</div>' +
+    '<div class="atar">' + fmtAtar(result.atar) + '</div>' +
+    rangeStr +
+    '<div class="blurb">' + blurb + '</div>';
+}
+
+function atarBlurb(a) {
+  if (a >= 99) return 'Top 1% of the cohort. Eligible for most competitive university courses including medicine and law at UQ.';
+  if (a >= 95) return 'Top 5%. Clears most high-cutoff degrees including engineering (UQ), commerce/law (UQ/QUT).';
+  if (a >= 90) return 'Top 10%. Strong options across health sciences, engineering, business, and the humanities.';
+  if (a >= 80) return 'Top 20%. Broad access to bachelor degrees across the major QLD universities.';
+  if (a >= 70) return 'Above the cohort midpoint. Most general bachelor programs are reachable.';
+  if (a >= 60) return 'Mid-range. Many entry-level bachelor programs accept this rank, often with adjustment factors.';
+  if (a >= 50) return 'Lower range. Look into pathway programs, diplomas, and adjustment-factor schemes.';
+  return 'Consider VET pathways, bridging programs, or improving subject results before applying.';
+}
+
+function renderPipeline(result) {
+  const wrap = document.getElementById('pipeline');
+  if (result.atar === null) {
+    wrap.innerHTML = '<div class="placeholder">Complete the inputs to see the pipeline.</div>';
+    return;
+  }
+
+  const subjectRows = result.subjects.map(s => {
+    const inCombo = result.combo.some(c => c.code === s.code);
+    const rawDisplay = s.type === 'APP' ? 'Grade ' + s.grade : s.type === 'VET' ? '&mdash;' : (s.mode === 'range' ? s.rangeLow + '&ndash;' + s.rangeHigh : s.raw);
+    return '<div class="row ' + (inCombo ? 'top5' : 'dropped') + '">' +
+      '<div>' + s.name + '</div>' +
+      '<div class="num">' + rawDisplay + '</div>' +
+      '<div class="num">' + s.scaled.toFixed(2) + '</div>' +
+      '<div class="num">' + (inCombo ? 'in top 5' : 'dropped') + '</div>' +
+      '</div>';
+  }).join('');
+
+  wrap.innerHTML =
+    '<div class="stage"><h3><span class="n">1</span> Raw to scaled (per subject)</h3>' +
+    '<div class="desc">QTAC\'s 2024 scaling lifts hard-cohort subjects up and easier-cohort subjects down. Interpolated from published 25/50/75/90/99 percentile breakpoints.</div>' +
+    '<div class="scaled-list">' +
+    '<div class="head">Subject</div><div class="head num">Raw</div><div class="head num">Scaled</div><div class="head num">In top 5?</div>' +
+    subjectRows + '</div></div>' +
+    '<div class="stage"><h3><span class="n">2</span> Best-5 combination chosen</h3>' +
+    '<div class="desc">Scheme: <strong>' + result.schemeUsed + '</strong>. We enumerate every legal 5-subject combo (respecting precluded subject combinations) and pick the one with the highest TEA.</div></div>' +
+    '<div class="stage"><h3><span class="n">3</span> Tertiary Entrance Aggregate (TEA)</h3>' +
+    '<div class="desc">Sum of your top 5 scaled scores.</div>' +
+    '<div class="tea-display">' + result.tea.toFixed(2) + ' <span class="max">/ 500.00</span></div></div>' +
+    '<div class="stage"><h3><span class="n">4</span> TEA to ATAR</h3>' +
+    '<div class="desc">Calibrated against the 2024 ATAR Report\'s cumulative student counts (Table 14). For a TEA of ' + result.tea.toFixed(2) + ', the eligible-student percentile maps to ATAR ' + fmtAtar(result.atar) + '.</div></div>';
+}
+
+function renderSensitivity(result) {
+  const wrap = document.getElementById('sensitivity');
+  if (result.atar === null) {
+    wrap.innerHTML = '<div class="placeholder">Complete the inputs.</div>';
+    return;
+  }
+  const data = sensitivity(state.entries);
+  wrap.innerHTML = data.map(d => {
+    const delta = d.delta;
+    const cls = delta > 0.001 ? '' : 'zero';
+    const arrow = delta > 0.001 ? '&uarr;' : '';
+    return '<div class="name">' + d.name + ' <span class="sub">(' + d.label + ')</span></div>' +
+      '<div class="val ' + cls + '">' + arrow + ' ' + (delta > 0.001 ? '+' + delta.toFixed(2) : '0.00') + ' ATAR</div>';
+  }).join('');
+}
+
+function renderScenarios() {
+  const wrap = document.getElementById('scenarios');
+  if (!state.scenarios.length) {
+    wrap.innerHTML = '<div class="placeholder">No saved scenarios yet. Save your current setup to start comparing.</div>';
+    document.getElementById('compare-wrap').innerHTML = '';
+    return;
+  }
+  wrap.innerHTML = state.scenarios.map(sc => {
+    const inCompare = state.compare && state.compare.indexOf(sc.id) !== -1;
+    return '<div class="scenario-card ' + (inCompare ? 'active' : '') + '">' +
+      '<div><div class="name">' + sc.name + '</div>' +
+      '<div class="sub">' + sc.entries.filter(e => e.code).length + ' subjects &middot; TEA ' + (sc.snapshot.tea ? sc.snapshot.tea.toFixed(2) : '&mdash;') + '</div></div>' +
+      '<div class="atar-mini">' + (sc.snapshot.atar !== null ? fmtAtar(sc.snapshot.atar) : '&mdash;') + '</div>' +
+      '<button class="ghost" onclick="loadScenario(\'' + sc.id + '\')">Load</button>' +
+      '<button class="ghost" onclick="toggleCompare(\'' + sc.id + '\')">' + (inCompare ? '&#10003; in compare' : 'Compare') + '</button>' +
+      '</div>';
+  }).join('') + '<div class="sub" style="margin-top: 6px;">' + state.scenarios.length + ' saved. Pick 2 to compare. <button class="danger" onclick="clearScenarios()">Clear all</button></div>';
+
+  const cw = document.getElementById('compare-wrap');
+  if (state.compare && state.compare.length === 2) {
+    const a = state.scenarios.find(s => s.id === state.compare[0]);
+    const b = state.scenarios.find(s => s.id === state.compare[1]);
+    if (a && b) {
+      const diff = (b.snapshot.atar || 0) - (a.snapshot.atar || 0);
+      cw.innerHTML = '<div class="compare">' +
+        '<div class="col"><h4>' + a.name + '</h4>' +
+        '<div class="atar-big">' + fmtAtar(a.snapshot.atar) + '</div>' +
+        '<div class="sub">TEA ' + (a.snapshot.tea ? a.snapshot.tea.toFixed(2) : '&mdash;') + '</div>' +
+        renderCompareSubjects(a) + '</div>' +
+        '<div class="col"><h4>' + b.name + '</h4>' +
+        '<div class="atar-big">' + fmtAtar(b.snapshot.atar) + ' <span class="' + (diff>=0?'delta-up':'delta-down') + '" style="font-size: 16px;">' + (diff>=0?'+':'') + diff.toFixed(2) + '</span></div>' +
+        '<div class="sub">TEA ' + (b.snapshot.tea ? b.snapshot.tea.toFixed(2) : '&mdash;') + '</div>' +
+        renderCompareSubjects(b) + '</div></div>';
+    }
+  } else {
+    cw.innerHTML = state.compare && state.compare.length === 1
+      ? '<div class="sub" style="margin-top: 10px;">Pick a second scenario to compare.</div>'
+      : '';
+  }
+}
+
+function renderCompareSubjects(sc) {
+  return sc.entries.filter(e => e.code).map(e => {
+    const def = getSubjectDef(e.code);
+    if (!def) return '';
+    const raw = def.type === 'APP' ? 'Gr ' + e.grade : def.type === 'VET' ? '&mdash;' : (e.mode === 'range' ? e.rangeLow + '-' + e.rangeHigh : e.raw);
+    return '<div class="row"><div>' + def.name + '</div><div>' + raw + '</div></div>';
+  }).join('');
+}
+
+function loadScenario(scId) {
+  const sc = state.scenarios.find(s => s.id === scId);
+  if (!sc) return;
+  state.entries = sc.entries.map(e => ({ ...e, id: id() }));
+  saveState();
+  render();
+}
+
+function toggleCompare(scId) {
+  if (!state.compare) state.compare = [];
+  const idx = state.compare.indexOf(scId);
+  if (idx >= 0) {
+    state.compare.splice(idx, 1);
+  } else {
+    if (state.compare.length >= 2) state.compare.shift();
+    state.compare.push(scId);
+  }
+  renderScenarios();
+}
+
+function clearScenarios() {
+  if (!confirm('Delete all saved scenarios?')) return;
+  state.scenarios = [];
+  state.compare = null;
+  saveState();
+  renderScenarios();
+}
+
+document.getElementById('add-subject').addEventListener('click', addEntry);
+document.getElementById('reset').addEventListener('click', () => {
+  if (state.entries.length && !confirm('Clear all subjects?')) return;
+  state.entries = [];
+  saveState();
+  render();
+});
+document.getElementById('save-scenario').addEventListener('click', () => {
+  const nameInput = document.getElementById('scenario-name');
+  const name = nameInput.value.trim() || ('Scenario ' + (state.scenarios.length + 1));
+  const snapshot = calculate(state.entries);
+  state.scenarios.push({
+    id: 's' + Date.now(),
+    name,
+    entries: JSON.parse(JSON.stringify(state.entries)),
+    snapshot: { atar: snapshot.atar, tea: snapshot.tea, schemeUsed: snapshot.schemeUsed, error: snapshot.error },
+  });
+  nameInput.value = '';
+  saveState();
+  renderScenarios();
+});
+document.getElementById('share-link').addEventListener('click', async () => {
+  const link = buildShareLink();
+  try {
+    await navigator.clipboard.writeText(link);
+    const btn = document.getElementById('share-link');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  } catch (e) {
+    prompt('Copy this link:', link);
+  }
+});
+
+function render() {
+  document.getElementById('subject-count').textContent = state.entries.length + ' subject' + (state.entries.length === 1 ? '' : 's') + ' added';
+  const result = calculate(state.entries);
+  renderSubjectRows();
+  renderEligibility(result);
+  renderResult(result);
+  renderPipeline(result);
+  renderSensitivity(result);
+  renderScenarios();
+  saveState();
+}
+
+window.updateEntry = updateEntry;
+window.removeEntry = removeEntry;
+window.loadScenario = loadScenario;
+window.toggleCompare = toggleCompare;
+window.clearScenarios = clearScenarios;
+
+if (!loadStateFromHash()) loadState();
+state.entries.forEach(e => { e.id = id(); });
+if (!state.entries.length) {
+  state.entries = [
+    { id: id(), code: '0001', mode: 'single', raw: 82, rangeLow: 75, rangeHigh: 85, grade: 'C' },
+    { id: id(), code: '0053', mode: 'single', raw: 85, rangeLow: 80, rangeHigh: 90, grade: 'C' },
+    { id: id(), code: '0040', mode: 'single', raw: 80, rangeLow: 75, rangeHigh: 85, grade: 'C' },
+    { id: id(), code: '0041', mode: 'single', raw: 78, rangeLow: 70, rangeHigh: 85, grade: 'C' },
+    { id: id(), code: '0042', mode: 'single', raw: 84, rangeLow: 78, rangeHigh: 90, grade: 'C' },
+  ];
+}
+render();
+</script>
+</body>
+</html>
