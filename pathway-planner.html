@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pathway Planner — MSHS Y8 to Y12 + QLD University Courses</title>
+<style>
+:root {
+  --bg: #0f172a;
+  --bg-panel: #1e293b;
+  --bg-panel-2: #334155;
+  --border: #475569;
+  --text: #f1f5f9;
+  --text-dim: #cbd5e1;
+  --text-mute: #94a3b8;
+  --accent: #fbbf24;
+  --accent-text: #1f1300;
+  --success: #4ade80;
+  --warning: #fb923c;
+  --danger: #f87171;
+  --info: #60a5fa;
+  --gen: #60a5fa;
+  --app: #fb923c;
+  --vet: #4ade80;
+  --shadow: 0 4px 14px rgba(0,0,0,0.35);
+  --chain-glow: 0 0 0 2px var(--accent), 0 0 12px rgba(251,191,36,0.4);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+a { color: var(--info); }
+.wrap { max-width: 1280px; margin: 0 auto; padding: 20px 16px 60px; }
+header { margin-bottom: 18px; }
+h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.5px; }
+h1 .badge { font-size: 11px; background: var(--accent); color: var(--accent-text); padding: 3px 8px; border-radius: 4px; margin-left: 8px; vertical-align: middle; font-weight: 700; }
+.sub { color: var(--text-dim); font-size: 14px; max-width: 820px; }
+.tabs { display: flex; gap: 6px; margin: 16px 0 14px; border-bottom: 1px solid var(--border); }
+.tabs button { background: transparent; border: none; color: var(--text-dim); padding: 10px 16px; font: inherit; cursor: pointer; border-bottom: 2px solid transparent; border-radius: 0; font-weight: 500; }
+.tabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tabs button:hover { color: var(--text); }
+.panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow); }
+button { background: var(--accent); color: var(--accent-text); border: none; padding: 9px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; font: inherit; }
+button.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+button.tiny { padding: 4px 10px; font-size: 13px; font-weight: 500; }
+button:hover { filter: brightness(1.1); }
+
+/* Timeline */
+.timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+@media (max-width: 920px) { .timeline { grid-template-columns: 1fr; } }
+.year-col { background: var(--bg-panel-2); border-radius: 10px; padding: 12px; min-width: 0; }
+.year-col h3 { margin: 0 0 4px; font-size: 16px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.year-col .yr-meta { font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.5px; }
+.year-col .yr-rule { font-size: 12px; color: var(--text-mute); margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.year-col .yr-rule strong { color: var(--text-dim); }
+.subj-group { margin-top: 10px; }
+.subj-group .lbl { font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.subj { display: flex; align-items: center; gap: 6px; padding: 7px 9px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 4px; font-size: 13px; cursor: pointer; transition: all 0.12s; line-height: 1.25; }
+.subj:hover { border-color: var(--text-mute); }
+.subj .nm { flex: 1; min-width: 0; word-break: break-word; }
+.subj .tag { font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 3px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.3px; }
+.subj .tag.CORE { background: var(--text-mute); color: var(--bg); }
+.subj .tag.ELECTIVE { background: var(--text-mute); color: var(--bg); opacity: 0.7; }
+.subj .tag.PREP-GEN, .subj .tag.GEN { background: var(--gen); color: var(--bg); }
+.subj .tag.PREP-APP, .subj .tag.APP { background: var(--app); color: var(--bg); }
+.subj .tag.VET { background: var(--vet); color: var(--bg); }
+.subj.selected { background: var(--bg-panel); border-color: var(--accent); }
+.subj.selected .nm { color: var(--accent); font-weight: 600; }
+.subj.chain { box-shadow: var(--chain-glow); }
+.subj.locked-stack { border-left: 3px solid var(--warning); }
+.subj.suggest { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.35); }
+.slot-counter { font-size: 11px; color: var(--text-mute); margin-top: 8px; padding-top: 6px; border-top: 1px dotted var(--border); }
+.slot-counter.over { color: var(--danger); }
+.slot-counter.full { color: var(--success); }
+
+/* Locks chip */
+.locks-pill { font-size: 9px; background: var(--warning); color: var(--bg); padding: 1px 4px; border-radius: 3px; margin-left: 4px; font-weight: 700; }
+
+/* Courses */
+.course-layout { display: grid; grid-template-columns: 1fr 1.1fr; gap: 14px; }
+@media (max-width: 920px) { .course-layout { grid-template-columns: 1fr; } }
+.course-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.chip { padding: 5px 10px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); color: var(--text-dim); font-size: 12px; cursor: pointer; }
+.chip.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+.search { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 10px; border-radius: 6px; font: inherit; margin-bottom: 10px; }
+.course-list { display: grid; gap: 6px; max-height: 540px; overflow-y: auto; padding-right: 4px; }
+.course-card { background: var(--bg); border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; transition: border-color 0.1s; }
+.course-card:hover { border-color: var(--text-mute); }
+.course-card.selected { border-color: var(--accent); background: var(--bg-panel-2); }
+.course-card.match { background: rgba(251,191,36,0.06); border-color: rgba(251,191,36,0.4); }
+.course-card .uni { font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.5px; grid-column: 1; }
+.course-card .nm { font-size: 14px; font-weight: 500; grid-column: 1; }
+.course-card .rank { font-size: 18px; color: var(--accent); font-weight: 700; grid-column: 2; grid-row: 1 / 3; align-self: center; font-variant-numeric: tabular-nums; }
+.course-card .status { font-size: 11px; grid-column: 1; margin-top: 2px; }
+.status-on { color: var(--success); }
+.status-partial { color: var(--warning); }
+.status-blocked { color: var(--danger); }
+.status-unset { color: var(--text-mute); }
+.course-detail { background: var(--bg-panel-2); border-radius: 10px; padding: 16px; }
+.course-detail.empty { display: flex; align-items: center; justify-content: center; color: var(--text-mute); min-height: 200px; font-size: 14px; text-align: center; padding: 20px; }
+.course-detail h3 { margin: 0 0 4px; font-size: 18px; }
+.course-detail .sub-uni { color: var(--text-mute); font-size: 13px; margin-bottom: 12px; }
+.course-detail .row { display: grid; grid-template-columns: 100px 1fr; padding: 6px 0; border-bottom: 1px dotted var(--border); font-size: 13px; gap: 8px; }
+.course-detail .row .k { color: var(--text-mute); }
+.course-detail .row.lsr .v { color: var(--accent); font-weight: 700; font-size: 18px; line-height: 1; }
+.prereq-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; }
+.prereq-row .mark { font-weight: 700; font-size: 14px; width: 16px; text-align: center; }
+.prereq-row .mark.ok { color: var(--success); }
+.prereq-row .mark.no { color: var(--danger); }
+.prereq-row .mark.maybe { color: var(--warning); }
+
+/* Interests */
+.quiz { max-width: 720px; }
+.quiz .q { background: var(--bg-panel-2); border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+.quiz .q .q-num { color: var(--text-mute); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.quiz .q .q-text { font-size: 16px; margin: 4px 0 10px; }
+.quiz .q .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+@media (max-width: 600px) { .quiz .q .opts { grid-template-columns: 1fr; } }
+.quiz .opt { padding: 9px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 13px; }
+.quiz .opt:hover { border-color: var(--text-mute); }
+.quiz .opt.picked { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+.results-box { background: var(--bg-panel-2); padding: 14px; border-radius: 8px; margin-top: 14px; }
+.results-box h4 { margin: 0 0 8px; font-size: 14px; }
+.family-bar { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; }
+.family-bar .fam-name { width: 110px; color: var(--text-dim); }
+.family-bar .bar-bg { flex: 1; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.family-bar .bar-fill { height: 100%; background: var(--accent); }
+.family-bar .pct { width: 36px; text-align: right; color: var(--text-mute); font-variant-numeric: tabular-nums; }
+
+/* Footer */
+.footer-note { color: var(--text-mute); font-size: 12px; border-top: 1px solid var(--border); padding-top: 14px; margin-top: 24px; line-height: 1.6; }
+.footer-note a { color: var(--info); }
+.placeholder { color: var(--text-mute); text-align: center; padding: 24px; font-size: 14px; }
+.guide-flag { display: inline-block; background: rgba(96,165,250,0.15); color: var(--info); padding: 1px 6px; border-radius: 3px; font-size: 10px; margin-left: 4px; font-weight: 600; }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Pathway Planner <span class="badge">MSHS &middot; QLD</span></h1>
+  <p class="sub">Plan your Mansfield State High journey from Year 8 to Year 12, and see which Queensland university courses you keep open at each step. Click a subject to toggle it; double-click to highlight its forward and backward chain.</p>
+</header>
+
+<div class="tabs" role="tablist">
+  <button data-tab="pathway" onclick="setTab('pathway')" class="active">Pathway Map</button>
+  <button data-tab="courses" onclick="setTab('courses')">Course Explorer</button>
+  <button data-tab="interests" onclick="setTab('interests')">Interests Quiz</button>
+</div>
+
+<section id="pathway-tab" class="panel">
+  <div id="timeline" class="timeline"></div>
+  <p class="sub" style="margin-top:14px;font-size:12px;">
+    <span class="guide-flag">GO</span> = inflection point worth discussing with a Guidance Officer.
+    <span class="locks-pill">×2</span> = locked program (consumes 2 elective slots).
+  </p>
+</section>
+
+<section id="courses-tab" class="panel" style="display:none;"></section>
+
+<section id="interests-tab" class="panel" style="display:none;"></section>
+
+<div class="footer-note">
+  <strong>Data verified:</strong> 2026-06-19. MSHS subject lists extracted from the official 2026 (Y8–Y10) and 2026-27 (Y11–12) curriculum guides. QLD course prerequisites and lowest selection ranks are an indicative MVP dataset — re-verify against <a href="https://www.qtac.edu.au/" target="_blank" rel="noopener">QTAC</a> and each university's admissions transparency page before final Y12 subject selection (target review: Term 3, 2027). Course cutoffs typically move ±2–5 ATAR points per year.<br><br>
+  <strong>For Y11/12 ATAR scenarios</strong> (raw scores → scaled → TEA → ATAR), use the sibling tool ATAR Sandbox.<br><br>
+  This is a planning aid, not advice. For senior subject decisions, talk to a Mansfield Guidance Officer.
+</div>
+
+</div>
+
+<script>
+// =================== MSHS_PATHWAY ===================
+// MSHS subject structure, hand-curated from the 2026 curriculum guides.
+// verifiedAsAt: 2026-06-19
+// Source: ATAR Navigator Resources/source-pdfs/Year [8|9|10|11-12] Curriculum Guide.pdf
+//
+// Structure:
+//   MSHS_PATHWAY[year] = { core: [...], electives: { group: [...subjects...] }, notes }
+//   Each subject: { id, name, type, leadsTo: [...subject-ids in next year(s)], locks?, notes? }
+//   type values: 'CORE', 'ELECTIVE', 'PREP-GEN', 'PREP-APP', 'GEN', 'APP', 'VET'
+//   id format: 'y<year>-<slug>' for unique identity across the chain
+//   leadsTo: forward links into the next year's subject ids
+//
+// Locked programs at MSHS:
+//   - French Immersion (Y9 onwards) — consumes 2 elective slots per year
+//   - Music Accelerando (Y9 Music Extension) — consumes 2 elective slots per year
+
+const MSHS_PATHWAY = {
+  verifiedAsAt: '2026-06-19',
+
+  Y8: {
+    label: 'Year 8',
+    description: 'All students take 6 core subjects (HPE and Language for one semester each). 2 electives: 1 Arts + 1 Tech.',
+    core: [
+      { id: 'y8-eng', name: 'English', type: 'CORE', leadsTo: ['y9-eng'] },
+      { id: 'y8-mat', name: 'Mathematics', type: 'CORE', leadsTo: ['y9-mat'] },
+      { id: 'y8-sci', name: 'Science', type: 'CORE', leadsTo: ['y9-sci'] },
+      { id: 'y8-hum', name: 'Humanities', type: 'CORE', leadsTo: ['y9-hist', 'y9-eco', 'y9-geo'] },
+      { id: 'y8-hpe', name: 'Health & PE (1 sem)', type: 'CORE', leadsTo: ['y9-hpe'] },
+      { id: 'y8-lang', name: 'Language (1 sem)', type: 'CORE', leadsTo: ['y9-fre', 'y9-jpn', 'y9-fre-imm'] },
+    ],
+    electives: {
+      Arts: [
+        { id: 'y8-drama', name: 'Drama', type: 'ELECTIVE', leadsTo: ['y9-drama'] },
+        { id: 'y8-media', name: 'Media Arts', type: 'ELECTIVE', leadsTo: ['y9-media'] },
+        { id: 'y8-music', name: 'Music', type: 'ELECTIVE', leadsTo: ['y9-music', 'y9-music-acc'] },
+        { id: 'y8-visart', name: 'Visual Arts', type: 'ELECTIVE', leadsTo: ['y9-visart'] },
+      ],
+      Technologies: [
+        { id: 'y8-design', name: 'Design Technology', type: 'ELECTIVE', leadsTo: ['y9-design', 'y9-eng-prin', 'y9-materials'] },
+        { id: 'y8-digi', name: 'Digital Solutions', type: 'ELECTIVE', leadsTo: ['y9-digi'] },
+        { id: 'y8-food', name: 'Food Studies', type: 'ELECTIVE', leadsTo: ['y9-food'] },
+      ],
+    },
+    rules: { artsElectives: 1, techElectives: 1, totalElectives: 2 },
+  },
+
+  Y9: {
+    label: 'Year 9',
+    description: 'Core: English, Maths, Science, HPE (1 sem), History (1 sem). Up to 4 elective subjects (2 per semester).',
+    core: [
+      { id: 'y9-eng', name: 'English', type: 'CORE', leadsTo: ['y10-prep-eng', 'y10-prep-eal', 'y10-prep-lit', 'y10-prep-ess-eng'] },
+      { id: 'y9-mat', name: 'Mathematics', type: 'CORE', leadsTo: ['y10-prep-gen-mat', 'y10-prep-methods', 'y10-prep-specialist', 'y10-prep-ess-mat'] },
+      { id: 'y9-sci', name: 'Science', type: 'CORE', leadsTo: ['y10-prep-bio', 'y10-prep-chem', 'y10-prep-phys', 'y10-prep-sci-prac'] },
+      { id: 'y9-hpe', name: 'Health & PE (1 sem)', type: 'CORE', leadsTo: ['y10-prep-health', 'y10-prep-pe', 'y10-prep-ec', 'y10-prep-fit', 'y10-prep-sr'] },
+      { id: 'y9-hist', name: 'History (1 sem)', type: 'CORE', leadsTo: ['y10-prep-anc-hist', 'y10-prep-mod-hist', 'y10-prep-soc-comm', 'y10-prep-rel-eth'] },
+    ],
+    electives: {
+      Humanities: [
+        { id: 'y9-eco', name: 'Economics & Business', type: 'ELECTIVE', leadsTo: ['y10-prep-acc', 'y10-prep-bus', 'y10-prep-eco', 'y10-prep-legal'] },
+        { id: 'y9-geo', name: 'Geography', type: 'ELECTIVE', leadsTo: ['y10-prep-geo'] },
+      ],
+      Languages: [
+        { id: 'y9-fre', name: 'French', type: 'ELECTIVE', leadsTo: ['y10-prep-fre'], notes: 'Both semesters' },
+        { id: 'y9-fre-imm', name: 'French Immersion', type: 'ELECTIVE', leadsTo: ['y10-prep-fre-imm'], locks: 2, notes: 'Locked program; consumes 2 elective slots per year' },
+        { id: 'y9-jpn', name: 'Japanese', type: 'ELECTIVE', leadsTo: ['y10-prep-jpn'], notes: 'Both semesters' },
+      ],
+      Technologies: [
+        { id: 'y9-design', name: 'Design Technology', type: 'ELECTIVE', leadsTo: ['y10-prep-design'] },
+        { id: 'y9-digi', name: 'Digital Technology', type: 'ELECTIVE', leadsTo: ['y10-prep-digi'] },
+        { id: 'y9-eng-prin', name: 'Engineering Principles & Systems', type: 'ELECTIVE', leadsTo: ['y10-prep-engineering'] },
+        { id: 'y9-food', name: 'Food Technology', type: 'ELECTIVE', leadsTo: ['y10-prep-hosp'] },
+        { id: 'y9-materials', name: 'Materials & Technology Specialisations', type: 'ELECTIVE', leadsTo: ['y10-prep-furn', 'y10-prep-indtech', 'y10-prep-indgraph'] },
+      ],
+      Arts: [
+        { id: 'y9-drama', name: 'Drama', type: 'ELECTIVE', leadsTo: ['y10-prep-drama'] },
+        { id: 'y9-media', name: 'Media Arts', type: 'ELECTIVE', leadsTo: ['y10-prep-media-prac', 'y10-prep-ftvm'] },
+        { id: 'y9-music', name: 'Music', type: 'ELECTIVE', leadsTo: ['y10-prep-music', 'y10-prep-music-prac'] },
+        { id: 'y9-music-acc', name: 'Music Extension (Accelerando)', type: 'ELECTIVE', leadsTo: ['y10-prep-music', 'y10-prep-music-ext'], locks: 2, notes: 'Locked Accelerando program; consumes 2 elective slots per year' },
+        { id: 'y9-visart', name: 'Visual Arts', type: 'ELECTIVE', leadsTo: ['y10-prep-visart', 'y10-prep-visart-prac'] },
+      ],
+    },
+    rules: { totalElectives: 4, slotsPerSemester: 2 },
+  },
+
+  Y10: {
+    label: 'Year 10',
+    description: 'Core: English, Maths. 4 electives per semester (8 total). Preparatory subjects are direct precursors to Y11-12 General/Applied subjects — selection here gates senior options.',
+    core: [
+      { id: 'y10-eng-core', name: 'English (compulsory pick of 1 elective from Eng family)', type: 'CORE' },
+      { id: 'y10-mat-core', name: 'Mathematics (compulsory pick of 1 elective from Maths family)', type: 'CORE' },
+    ],
+    electives: {
+      English: [
+        { id: 'y10-prep-eng', name: 'Preparatory English', type: 'PREP-GEN', leadsTo: ['y12-english'] },
+        { id: 'y10-prep-eal', name: 'Preparatory EAL', type: 'PREP-GEN', leadsTo: ['y12-eal'] },
+        { id: 'y10-prep-lit', name: 'Preparatory Literature', type: 'PREP-GEN', leadsTo: ['y12-literature'] },
+        { id: 'y10-prep-ess-eng', name: 'Preparatory Essential English', type: 'PREP-APP', leadsTo: ['y12-ess-english'] },
+      ],
+      Mathematics: [
+        { id: 'y10-prep-gen-mat', name: 'Preparatory General Mathematics', type: 'PREP-GEN', leadsTo: ['y12-gen-maths'] },
+        { id: 'y10-prep-methods', name: 'Preparatory Mathematical Methods', type: 'PREP-GEN', leadsTo: ['y12-methods', 'y12-specialist'] },
+        { id: 'y10-prep-specialist', name: 'Preparatory Specialist Mathematics', type: 'PREP-GEN', leadsTo: ['y12-specialist'], notes: 'Co-requires Prep Methods' },
+        { id: 'y10-prep-ess-mat', name: 'Preparatory Essential Mathematics', type: 'PREP-APP', leadsTo: ['y12-ess-maths'] },
+      ],
+      Science: [
+        { id: 'y10-prep-bio', name: 'Preparatory Biology', type: 'PREP-GEN', leadsTo: ['y12-biology'] },
+        { id: 'y10-prep-chem', name: 'Preparatory Chemistry', type: 'PREP-GEN', leadsTo: ['y12-chemistry'] },
+        { id: 'y10-prep-phys', name: 'Preparatory Physics', type: 'PREP-GEN', leadsTo: ['y12-physics'] },
+        { id: 'y10-prep-sci-prac', name: 'Preparatory Science in Practice', type: 'PREP-APP', leadsTo: ['y12-sci-prac'] },
+      ],
+      'Humanities & Social Sciences': [
+        { id: 'y10-prep-acc', name: 'Preparatory Accounting', type: 'PREP-GEN', leadsTo: ['y12-accounting'] },
+        { id: 'y10-prep-anc-hist', name: 'Preparatory Ancient History', type: 'PREP-GEN', leadsTo: ['y12-ancient-hist'] },
+        { id: 'y10-prep-bus', name: 'Preparatory Business', type: 'PREP-GEN', leadsTo: ['y12-business'] },
+        { id: 'y10-prep-eco', name: 'Preparatory Economics', type: 'PREP-GEN', leadsTo: ['y12-economics'] },
+        { id: 'y10-prep-geo', name: 'Preparatory Geography', type: 'PREP-GEN', leadsTo: ['y12-geography'] },
+        { id: 'y10-prep-legal', name: 'Preparatory Legal Studies', type: 'PREP-GEN', leadsTo: ['y12-legal'] },
+        { id: 'y10-prep-mod-hist', name: 'Preparatory Modern History', type: 'PREP-GEN', leadsTo: ['y12-modern-hist'] },
+        { id: 'y10-prep-rel-eth', name: 'Preparatory Religion & Ethics', type: 'PREP-APP', leadsTo: [] },
+        { id: 'y10-prep-soc-comm', name: 'Preparatory Social & Community Studies', type: 'PREP-APP', leadsTo: ['y12-soc-comm'] },
+      ],
+      Languages: [
+        { id: 'y10-prep-fre', name: 'Preparatory French', type: 'PREP-GEN', leadsTo: ['y12-french', 'y12-french-ext'] },
+        { id: 'y10-prep-fre-imm', name: 'Preparatory French Immersion', type: 'PREP-GEN', leadsTo: ['y12-french', 'y12-french-ext'] },
+        { id: 'y10-prep-jpn', name: 'Preparatory Japanese', type: 'PREP-GEN', leadsTo: ['y12-japanese'] },
+      ],
+      Technologies: [
+        { id: 'y10-prep-design', name: 'Preparatory Design', type: 'PREP-GEN', leadsTo: ['y12-design'] },
+        { id: 'y10-prep-digi', name: 'Preparatory Digital Solutions', type: 'PREP-GEN', leadsTo: ['y12-digital-sol'] },
+        { id: 'y10-prep-engineering', name: 'Preparatory Engineering', type: 'PREP-GEN', leadsTo: ['y12-engineering'] },
+        { id: 'y10-prep-furn', name: 'Preparatory Furnishing Skills', type: 'PREP-APP', leadsTo: ['y12-furn'] },
+        { id: 'y10-prep-hosp', name: 'Preparatory Hospitality Practices', type: 'PREP-APP', leadsTo: ['y12-cert-hosp'] },
+        { id: 'y10-prep-indgraph', name: 'Preparatory Industrial Graphics Skills', type: 'PREP-APP', leadsTo: ['y12-indgraph'] },
+        { id: 'y10-prep-indtech', name: 'Preparatory Industrial Technology Skills', type: 'PREP-APP', leadsTo: ['y12-indtech'] },
+      ],
+      'Health & Physical Education': [
+        { id: 'y10-prep-health', name: 'Preparatory Health', type: 'PREP-GEN', leadsTo: ['y12-health'] },
+        { id: 'y10-prep-pe', name: 'Preparatory Physical Education', type: 'PREP-GEN', leadsTo: ['y12-pe'] },
+        { id: 'y10-prep-ec', name: 'Preparatory Early Childhood Studies', type: 'PREP-APP', leadsTo: ['y12-early-child'] },
+        { id: 'y10-prep-fit', name: 'Preparatory Fitness', type: 'PREP-APP', leadsTo: ['y12-cert-fitness'] },
+        { id: 'y10-prep-sr', name: 'Preparatory Sport & Recreation', type: 'PREP-APP', leadsTo: ['y12-sport-rec'] },
+      ],
+      'The Arts': [
+        { id: 'y10-prep-drama', name: 'Preparatory Drama', type: 'PREP-GEN', leadsTo: ['y12-drama'] },
+        { id: 'y10-prep-ftvm', name: 'Preparatory Film, TV & New Media', type: 'PREP-GEN', leadsTo: ['y12-ftvm'] },
+        { id: 'y10-prep-music', name: 'Preparatory Music', type: 'PREP-GEN', leadsTo: ['y12-music', 'y12-music-ext-comp', 'y12-music-ext-perf'] },
+        { id: 'y10-prep-music-ext', name: 'Preparatory Music Extension', type: 'PREP-GEN', leadsTo: ['y12-music-ext-comp', 'y12-music-ext-perf', 'y12-music-ext-musc'] },
+        { id: 'y10-prep-visart', name: 'Preparatory Visual Art', type: 'PREP-GEN', leadsTo: ['y12-visart'] },
+        { id: 'y10-prep-media-prac', name: 'Preparatory Media in Practice', type: 'PREP-APP', leadsTo: ['y12-media-prac'] },
+        { id: 'y10-prep-music-prac', name: 'Preparatory Music in Practice', type: 'PREP-APP', leadsTo: ['y12-music-prac'] },
+        { id: 'y10-prep-visart-prac', name: 'Preparatory Visual Arts in Practice', type: 'PREP-APP', leadsTo: ['y12-visart-prac'] },
+      ],
+    },
+    rules: { totalElectives: 8, slotsPerSemester: 4, mustIncludeEnglish: 1, mustIncludeMaths: 1 },
+  },
+
+  // Y11-12 subjects offered at MSHS. The existing DATA.QLD.subjects/applied/vet arrays already
+  // contain QCAA codes + scaling tables. The Y11-12 dataset here is a thin mapping:
+  // - id matches the leadsTo links in Y10
+  // - name matches MSHS's listing (matches existing DATA.QLD.* by name where possible)
+  // - links to existing v1 data via `v1Code` (the QCAA code in DATA.QLD.subjects)
+  Y11_12: {
+    label: 'Year 11–12 (Senior)',
+    description: 'QCE subjects offered at MSHS. Combines General (ATAR-bearing), Applied, and VET pathways.',
+    subjects: [
+      // English
+      { id: 'y12-english', name: 'English', category: 'English', type: 'GEN', v1Code: '0001' },
+      { id: 'y12-eal', name: 'English as an Additional Language', category: 'English', type: 'GEN', v1Code: '0003' },
+      { id: 'y12-literature', name: 'Literature', category: 'English', type: 'GEN', v1Code: '0026' },
+      { id: 'y12-ess-english', name: 'Essential English', category: 'English', type: 'APP', v1Code: '6121' },
+      // Maths
+      { id: 'y12-gen-maths', name: 'General Mathematics', category: 'Mathematics', type: 'GEN', v1Code: '0052' },
+      { id: 'y12-methods', name: 'Mathematical Methods', category: 'Mathematics', type: 'GEN', v1Code: '0053' },
+      { id: 'y12-specialist', name: 'Specialist Mathematics', category: 'Mathematics', type: 'GEN', v1Code: '0054' },
+      { id: 'y12-ess-maths', name: 'Essential Mathematics', category: 'Mathematics', type: 'APP', v1Code: '6140' },
+      // Science
+      { id: 'y12-biology', name: 'Biology', category: 'Science', type: 'GEN', v1Code: '0042' },
+      { id: 'y12-chemistry', name: 'Chemistry', category: 'Science', type: 'GEN', v1Code: '0040' },
+      { id: 'y12-physics', name: 'Physics', category: 'Science', type: 'GEN', v1Code: '0041' },
+      { id: 'y12-earth-env', name: 'Earth & Environmental Science', category: 'Science', type: 'GEN', v1Code: '0043' },
+      { id: 'y12-sci-prac', name: 'Science in Practice', category: 'Science', type: 'APP', v1Code: '6421' },
+      // HASS
+      { id: 'y12-accounting', name: 'Accounting', category: 'HASS', type: 'GEN', v1Code: '0060' },
+      { id: 'y12-ancient-hist', name: 'Ancient History', category: 'HASS', type: 'GEN', v1Code: '0020' },
+      { id: 'y12-business', name: 'Business', category: 'HASS', type: 'GEN', v1Code: '0066' },
+      { id: 'y12-economics', name: 'Economics', category: 'HASS', type: 'GEN', v1Code: '0027' },
+      { id: 'y12-geography', name: 'Geography', category: 'HASS', type: 'GEN', v1Code: '0024' },
+      { id: 'y12-legal', name: 'Legal Studies', category: 'HASS', type: 'GEN', v1Code: '0029' },
+      { id: 'y12-modern-hist', name: 'Modern History', category: 'HASS', type: 'GEN', v1Code: '0021' },
+      { id: 'y12-soc-comm', name: 'Social & Community Studies', category: 'HASS', type: 'APP', v1Code: '6409' },
+      // Languages
+      { id: 'y12-french', name: 'French', category: 'Languages', type: 'GEN', v1Code: '0005' },
+      { id: 'y12-japanese', name: 'Japanese', category: 'Languages', type: 'GEN', v1Code: '0009' },
+      { id: 'y12-french-ext', name: 'French Extension', category: 'Languages', type: 'GEN', notes: 'Extension subject, taken alongside French' },
+      // HPE
+      { id: 'y12-health', name: 'Health', category: 'HPE', type: 'GEN', v1Code: '0067' },
+      { id: 'y12-pe', name: 'Physical Education', category: 'HPE', type: 'GEN', v1Code: '0068' },
+      { id: 'y12-early-child', name: 'Early Childhood Studies', category: 'HPE', type: 'APP', v1Code: '6403' },
+      { id: 'y12-sport-rec', name: 'Sport & Recreation', category: 'HPE', type: 'APP', v1Code: '6407' },
+      { id: 'y12-cert-fitness', name: 'Certificate III in Fitness', category: 'HPE', type: 'VET', v1Code: 'CERTIII' },
+      // Technologies
+      { id: 'y12-design', name: 'Design', category: 'Technologies', type: 'GEN', v1Code: '0048' },
+      { id: 'y12-digital-sol', name: 'Digital Solutions', category: 'Technologies', type: 'GEN', v1Code: '0049' },
+      { id: 'y12-engineering', name: 'Engineering', category: 'Technologies', type: 'GEN', v1Code: '0074' },
+      { id: 'y12-furn', name: 'Furnishing Skills', category: 'Technologies', type: 'APP', v1Code: '6418' },
+      { id: 'y12-indgraph', name: 'Industrial Graphics Skills', category: 'Technologies', type: 'APP', v1Code: '6419' },
+      { id: 'y12-indtech', name: 'Industrial Technology Skills', category: 'Technologies', type: 'APP', v1Code: '6420' },
+      { id: 'y12-ict', name: 'Information & Communication Technology', category: 'Technologies', type: 'APP', v1Code: '6406' },
+      { id: 'y12-cert-hosp', name: 'Certificate II/III in Hospitality', category: 'Technologies', type: 'VET', v1Code: 'CERTIII' },
+      // The Arts
+      { id: 'y12-drama', name: 'Drama', category: 'The Arts', type: 'GEN', v1Code: '0088' },
+      { id: 'y12-ftvm', name: 'Film, Television & New Media', category: 'The Arts', type: 'GEN', v1Code: '0093' },
+      { id: 'y12-music', name: 'Music', category: 'The Arts', type: 'GEN', v1Code: '0091' },
+      { id: 'y12-music-ext-comp', name: 'Music Extension (Composition)', category: 'The Arts', type: 'GEN', v1Code: '0094c' },
+      { id: 'y12-music-ext-musc', name: 'Music Extension (Musicology)', category: 'The Arts', type: 'GEN' },
+      { id: 'y12-music-ext-perf', name: 'Music Extension (Performance)', category: 'The Arts', type: 'GEN', v1Code: '0094p' },
+      { id: 'y12-visart', name: 'Visual Art', category: 'The Arts', type: 'GEN', v1Code: '0080' },
+      { id: 'y12-media-prac', name: 'Media Arts in Practice', category: 'The Arts', type: 'APP', v1Code: '6413' },
+      { id: 'y12-music-prac', name: 'Music in Practice', category: 'The Arts', type: 'APP', v1Code: '6414' },
+      { id: 'y12-visart-prac', name: 'Visual Arts in Practice', category: 'The Arts', type: 'APP', v1Code: '6415' },
+    ],
+    rules: { totalSubjects: 6, mustIncludeEnglish: 1, mustIncludeMaths: 1 },
+  },
+};
+
+// =================== QLD_COURSES ===================
+// QLD undergraduate course dataset — MVP representative set.
+// verifiedAsAt: 2026-06-19 (training-grounded snapshot; treat as INDICATIVE pending refresh)
+//
+// IMPORTANT: This is a starter dataset built from training knowledge as of early 2026.
+// Lowest selection ranks (LSR) shift year-on-year — before relying on a specific cutoff,
+// re-verify via QTAC offer round data: https://www.qtac.edu.au/atar-my-path/
+// and each uni's admissions-transparency page.
+//
+// Schema:
+//   { id, uni, name, qtacCode, lsr, lsrYear, prereqs, recommended, gates, family, source }
+//   - prereqs: array of subject names matching MSHS Y11-12 listing
+//     (English subjects accepted: any of English/EAL/Literature unless noted)
+//   - recommended: not required, but commonly listed as "recommended" by uni
+//   - gates: non-academic hurdles (UCAT, interview, portfolio, audition, CASPer)
+//   - family: course-family tag for interest-overlay matching
+//
+// Family values: 'medicine', 'health-sci', 'engineering', 'it-cs', 'law',
+//   'business', 'science', 'education', 'humanities', 'design', 'creative', 'trades'
+
+const QLD_COURSES = {
+  verifiedAsAt: '2026-06-19',
+  note: 'INDICATIVE snapshot. Re-verify cutoffs annually before final Y12 subject selection. See pathway-refresh-checklist.md.',
+
+  courses: [
+    // ============== UQ (10) ==============
+    {
+      id: 'uq-med-prov',
+      uni: 'UQ', name: 'Bachelor of Medical Studies / Doctor of Medicine (Provisional Entry)',
+      qtacCode: '731101', lsr: 99.95, lsrYear: 2025,
+      prereqs: ['English', 'Chemistry'],
+      gates: ['UCAT', 'Interview'],
+      family: 'medicine',
+      source: 'https://study.uq.edu.au/study-options/programs/medical-studies-doctor-medicine-2455',
+    },
+    {
+      id: 'uq-dent',
+      uni: 'UQ', name: 'Bachelor of Dental Science (Honours)',
+      qtacCode: '729001', lsr: 99.05, lsrYear: 2025,
+      prereqs: ['English', 'Chemistry'],
+      recommended: ['Biology'],
+      gates: ['UCAT'],
+      family: 'medicine',
+      source: 'https://study.uq.edu.au/study-options/programs/dental-science-honours-2032',
+    },
+    {
+      id: 'uq-eng-hons',
+      uni: 'UQ', name: 'Bachelor of Engineering (Honours)',
+      qtacCode: '732701', lsr: 86.0, lsrYear: 2025,
+      prereqs: ['English', 'Mathematical Methods', 'Physics'],
+      family: 'engineering',
+      source: 'https://study.uq.edu.au/study-options/programs/engineering-honours-2456',
+    },
+    {
+      id: 'uq-cs',
+      uni: 'UQ', name: 'Bachelor of Computer Science',
+      qtacCode: '716701', lsr: 79.0, lsrYear: 2025,
+      prereqs: ['English', 'Mathematical Methods'],
+      family: 'it-cs',
+      source: 'https://study.uq.edu.au/study-options/programs/computer-science-2459',
+    },
+    {
+      id: 'uq-law-dual',
+      uni: 'UQ', name: 'Bachelor of Laws (Honours) / Bachelor of Arts',
+      qtacCode: '709601', lsr: 96.0, lsrYear: 2025,
+      prereqs: ['English'],
+      family: 'law',
+      source: 'https://study.uq.edu.au/study-options/programs/laws-honours-arts-2451',
+    },
+    {
+      id: 'uq-commerce',
+      uni: 'UQ', name: 'Bachelor of Commerce',
+      qtacCode: '714201', lsr: 81.0, lsrYear: 2025,
+      prereqs: ['English', 'General Mathematics'],
+      recommended: ['Mathematical Methods'],
+      family: 'business',
+      source: 'https://study.uq.edu.au/study-options/programs/commerce-2050',
+    },
+    {
+      id: 'uq-biomed',
+      uni: 'UQ', name: 'Bachelor of Biomedical Science',
+      qtacCode: '702001', lsr: 85.0, lsrYear: 2025,
+      prereqs: ['English', 'Chemistry'],
+      recommended: ['Biology', 'Mathematical Methods'],
+      family: 'health-sci',
+      source: 'https://study.uq.edu.au/study-options/programs/biomedical-science-2440',
+    },
+    {
+      id: 'uq-physio',
+      uni: 'UQ', name: 'Bachelor of Physiotherapy (Honours)',
+      qtacCode: '736401', lsr: 95.0, lsrYear: 2025,
+      prereqs: ['English', 'Chemistry'],
+      recommended: ['Biology', 'Physical Education'],
+      family: 'health-sci',
+      source: 'https://study.uq.edu.au/study-options/programs/physiotherapy-honours-2052',
+    },
+    {
+      id: 'uq-edu-prim',
+      uni: 'UQ', name: 'Bachelor of Education (Primary)',
+      qtacCode: '722501', lsr: 71.0, lsrYear: 2025,
+      prereqs: ['English', 'General Mathematics'],
+      gates: ['Non-Academic Entry Requirement'],
+      family: 'education',
+      source: 'https://study.uq.edu.au/study-options/programs/education-primary-2440',
+    },
+    {
+      id: 'uq-psych',
+      uni: 'UQ', name: 'Bachelor of Psychological Science',
+      qtacCode: '731001', lsr: 80.0, lsrYear: 2025,
+      prereqs: ['English'],
+      recommended: ['Mathematical Methods'],
+      family: 'health-sci',
+      source: 'https://study.uq.edu.au/study-options/programs/psychological-science-2270',
+    },
+
+    // ============== QUT (10) ==============
+    {
+      id: 'qut-med-eng',
+      uni: 'QUT', name: 'Bachelor of Engineering (Honours) / Bachelor of Medical Engineering',
+      qtacCode: '423012', lsr: 87.0, lsrYear: 2025,
+      prereqs: ['English', 'Mathematical Methods', 'Physics'],
+      family: 'engineering',
+      source: 'https://www.qut.edu.au/courses/bachelor-of-engineering-honours-bachelor-of-medical-engineering',
+    },
+    {
+      id: 'qut-eng-mech',
+      uni: 'QUT', name: 'Bachelor of Engineering (Honours) — Mechanical',
+      qtacCode: '425002', lsr: 80.0, lsrYear: 2025,
+      prereqs: ['English', 'Mathematical Methods', 'Physics'],
+      family: 'engineering',
+      source: 'https://www.qut.edu.au/courses/bachelor-of-engineering-honours',
+    },
+    {
+      id: 'qut-it',
+      uni: 'QUT', name: 'Bachelor of Information Technology',
+      qtacCode: '425052', lsr: 75.0, lsrYear: 2025,
+      prereqs: ['English', 'General Mathematics'],
+      recommended: ['Mathematical Methods'],
+      family: 'it-cs',
+      source: 'https://www.qut.edu.au/courses/bachelor-of-information-technology',
+    },
+    {
+      id: 'qut-cyber',
+      uni: 'QUT', name: 'Bachelor of Cyber Security',
+      qtacCode: '425272', lsr: 78.0, lsrYear: 2025,
+      prereqs: ['English', 'Mathematical Methods'],
+      family: 'it-cs',
+      source: 'https://www.qut.edu.au/courses/bachelor-of-cyber-security',
+    },
+    {
+      id: 'qut-law',
+      uni: 'QUT', name: 'Bachelor of Laws (Honours)',
+      qtacCode: '424032', lsr: 91.0, lsrYear: 2025,
+      prereqs: ['English'],
+      family: 'law',
+      source: 'https://www.qut.edu.au/courses/bachelor-of-laws-honours',
+    },
+    {
+      id: 'qut-business',
+      uni: 'QUT', name: 'Bachelor of Business',
+      qtacCode: '423652', lsr: 76.0, lsrYear: 2025,
+      prereqs: ['English', 'General Mathematics'],
+      family: 'business',
+      source: 'https://www.qut.edu.au/courses/bachelor-of-business',
+    },
+    {
+      id: 'qut-nurse',
+      uni: 'QUT', name: 'Bachelor of Nursing',
+      qtacCode: '422272', lsr: 75.0, lsrYear: 2025,
+      prereqs: ['English', 'General Mathematics'],
+      family: 'health-sci',
+      source: 'https://www.qut.edu.au/courses/bachelor-of-nursing',
+    },
+    {
+      id: 'qut-creative-ind',
+      uni: 'QUT', name: 'Bachelor of Creative Industries',
+      qtacCode: '424102', lsr: 76.0, lsrYear: 2025,
+      prereqs: ['English'],
+      family: 'creative',
+      source: 'https://www.qut.edu.au/courses/bachelor-of-creative-industries',
+    },
+    {
+      id: 'qut-design-arch',
+      uni: 'QUT', name: 'Bachelor of Design (Architecture)',
+      qtacCode: '425942', lsr: 78.0, lsrYear: 2025,
+      prereqs: ['English'],
+      family: 'design',
+      source: 'https://www.qut.edu.au/courses/bachelor-of-design',
+    },
+    {
+      id: 'qut-edu-sec',
+      uni: 'QUT', name: 'Bachelor of Education (Secondary)',
+      qtacCode: '424192', lsr: 70.0, lsrYear: 2025,
+      prereqs: ['English', 'General Mathematics'],
+      gates: ['Non-Academic Entry Requirement'],
+      family: 'education',
+      source: 'https://www.qut.edu.au/courses/bachelor-of-education-secondary',
+    },
+
+    // ============== Griffith (8) ==============
+    {
+      id: 'gri-med',
+      uni: 'Griffith', name: 'Bachelor of Medical Science / Doctor of Medicine (Provisional)',
+      qtacCode: '233412', lsr: 99.0, lsrYear: 2025,
+      prereqs: ['English', 'Chemistry'],
+      gates: ['UCAT', 'Interview'],
+      family: 'medicine',
+      source: 'https://www.griffith.edu.au/study/degrees/bachelor-of-medical-science',
+    },
+    {
+      id: 'gri-eng-soft',
+      uni: 'Griffith', name: 'Bachelor of Engineering (Honours) — Software',
+      qtacCode: '236262', lsr: 75.0, lsrYear: 2025,
+      prereqs: ['English', 'Mathematical Methods'],
+      family: 'engineering',
+      source: 'https://www.griffith.edu.au/study/degrees/bachelor-of-engineering-honours',
+    },
+    {
+      id: 'gri-it',
+      uni: 'Griffith', name: 'Bachelor of Information Technology',
+      qtacCode: '236302', lsr: 70.0, lsrYear: 2025,
+      prereqs: ['English'],
+      recommended: ['Mathematical Methods'],
+      family: 'it-cs',
+      source: 'https://www.griffith.edu.au/study/degrees/bachelor-of-information-technology',
+    },
+    {
+      id: 'gri-law',
+      uni: 'Griffith', name: 'Bachelor of Laws',
+      qtacCode: '236162', lsr: 87.0, lsrYear: 2025,
+      prereqs: ['English'],
+      family: 'law',
+      source: 'https://www.griffith.edu.au/study/degrees/bachelor-of-laws',
+    },
+    {
+      id: 'gri-business',
+      uni: 'Griffith', name: 'Bachelor of Business',
+      qtacCode: '233422', lsr: 73.0, lsrYear: 2025,
+      prereqs: ['English'],
+      family: 'business',
+      source: 'https://www.griffith.edu.au/study/degrees/bachelor-of-business',
+    },
+    {
+      id: 'gri-physio',
+      uni: 'Griffith', name: 'Bachelor of Physiotherapy (Honours)',
+      qtacCode: '234662', lsr: 93.0, lsrYear: 2025,
+      prereqs: ['English', 'Chemistry'],
+      recommended: ['Biology'],
+      family: 'health-sci',
+      source: 'https://www.griffith.edu.au/study/degrees/bachelor-of-physiotherapy-honours',
+    },
+    {
+      id: 'gri-music',
+      uni: 'Griffith', name: 'Bachelor of Music (Queensland Conservatorium)',
+      qtacCode: '236052', lsr: 70.0, lsrYear: 2025,
+      prereqs: ['English'],
+      gates: ['Audition'],
+      family: 'creative',
+      source: 'https://www.griffith.edu.au/study/degrees/bachelor-of-music',
+    },
+    {
+      id: 'gri-design',
+      uni: 'Griffith', name: 'Bachelor of Design',
+      qtacCode: '233502', lsr: 73.0, lsrYear: 2025,
+      prereqs: ['English'],
+      family: 'design',
+      source: 'https://www.griffith.edu.au/study/degrees/bachelor-of-design',
+    },
+
+    // ============== USC / UniSC (5) ==============
+    {
+      id: 'usc-nurse',
+      uni: 'UniSC', name: 'Bachelor of Nursing Science',
+      qtacCode: '014001', lsr: 70.0, lsrYear: 2025,
+      prereqs: ['English', 'General Mathematics'],
+      family: 'health-sci',
+      source: 'https://www.usc.edu.au/study/courses-and-programs/bachelor-degrees-undergraduate-programs/bachelor-of-nursing-science',
+    },
+    {
+      id: 'usc-edu-prim',
+      uni: 'UniSC', name: 'Bachelor of Education (Primary)',
+      qtacCode: '012021', lsr: 65.0, lsrYear: 2025,
+      prereqs: ['English', 'General Mathematics'],
+      gates: ['Non-Academic Entry Requirement'],
+      family: 'education',
+      source: 'https://www.usc.edu.au/study/courses-and-programs/bachelor-degrees-undergraduate-programs/bachelor-of-education-primary',
+    },
+    {
+      id: 'usc-business',
+      uni: 'UniSC', name: 'Bachelor of Business',
+      qtacCode: '011031', lsr: 65.0, lsrYear: 2025,
+      prereqs: ['English'],
+      family: 'business',
+      source: 'https://www.usc.edu.au/study/courses-and-programs/bachelor-degrees-undergraduate-programs/bachelor-of-business',
+    },
+    {
+      id: 'usc-eng',
+      uni: 'UniSC', name: 'Bachelor of Engineering (Honours)',
+      qtacCode: '015011', lsr: 70.0, lsrYear: 2025,
+      prereqs: ['English', 'Mathematical Methods'],
+      recommended: ['Physics'],
+      family: 'engineering',
+      source: 'https://www.usc.edu.au/study/courses-and-programs/bachelor-degrees-undergraduate-programs/bachelor-of-engineering-honours',
+    },
+    {
+      id: 'usc-psych',
+      uni: 'UniSC', name: 'Bachelor of Psychology',
+      qtacCode: '014011', lsr: 75.0, lsrYear: 2025,
+      prereqs: ['English'],
+      family: 'health-sci',
+      source: 'https://www.usc.edu.au/study/courses-and-programs/bachelor-degrees-undergraduate-programs/bachelor-of-psychology',
+    },
+
+    // ============== JCU (5) ==============
+    {
+      id: 'jcu-med',
+      uni: 'JCU', name: 'Bachelor of Medicine & Bachelor of Surgery (MBBS)',
+      qtacCode: '321001', lsr: 95.0, lsrYear: 2025,
+      prereqs: ['English', 'Chemistry'],
+      recommended: ['Mathematical Methods'],
+      gates: ['Interview', 'Written application'],
+      family: 'medicine',
+      source: 'https://www.jcu.edu.au/courses/bachelor-of-medicine-bachelor-of-surgery',
+    },
+    {
+      id: 'jcu-marine',
+      uni: 'JCU', name: 'Bachelor of Marine Science',
+      qtacCode: '324011', lsr: 70.0, lsrYear: 2025,
+      prereqs: ['English'],
+      recommended: ['Biology', 'Chemistry', 'Mathematical Methods'],
+      family: 'science',
+      source: 'https://www.jcu.edu.au/courses/bachelor-of-marine-science',
+    },
+    {
+      id: 'jcu-vet',
+      uni: 'JCU', name: 'Bachelor of Veterinary Science (Honours)',
+      qtacCode: '323031', lsr: 92.0, lsrYear: 2025,
+      prereqs: ['English', 'Chemistry', 'Mathematical Methods'],
+      recommended: ['Biology'],
+      family: 'medicine',
+      source: 'https://www.jcu.edu.au/courses/bachelor-of-veterinary-science',
+    },
+    {
+      id: 'jcu-nurse',
+      uni: 'JCU', name: 'Bachelor of Nursing Science',
+      qtacCode: '322011', lsr: 70.0, lsrYear: 2025,
+      prereqs: ['English'],
+      family: 'health-sci',
+      source: 'https://www.jcu.edu.au/courses/bachelor-of-nursing-science',
+    },
+    {
+      id: 'jcu-eng',
+      uni: 'JCU', name: 'Bachelor of Engineering (Honours)',
+      qtacCode: '325011', lsr: 72.0, lsrYear: 2025,
+      prereqs: ['English', 'Mathematical Methods'],
+      recommended: ['Physics'],
+      family: 'engineering',
+      source: 'https://www.jcu.edu.au/courses/bachelor-of-engineering-honours',
+    },
+
+    // ============== CQU (4) ==============
+    {
+      id: 'cqu-nurse',
+      uni: 'CQU', name: 'Bachelor of Nursing',
+      qtacCode: '853071', lsr: 70.0, lsrYear: 2025,
+      prereqs: ['English', 'General Mathematics'],
+      family: 'health-sci',
+      source: 'https://www.cqu.edu.au/courses/study-areas/health/undergraduate/bachelor-of-nursing',
+    },
+    {
+      id: 'cqu-eng',
+      uni: 'CQU', name: 'Bachelor of Engineering (Honours)',
+      qtacCode: '857551', lsr: 70.0, lsrYear: 2025,
+      prereqs: ['English', 'Mathematical Methods'],
+      recommended: ['Physics'],
+      family: 'engineering',
+      source: 'https://www.cqu.edu.au/courses/study-areas/engineering-and-built-environment/undergraduate/bachelor-of-engineering-honours',
+    },
+    {
+      id: 'cqu-it',
+      uni: 'CQU', name: 'Bachelor of Information Technology',
+      qtacCode: '857101', lsr: 65.0, lsrYear: 2025,
+      prereqs: ['English'],
+      recommended: ['Mathematical Methods'],
+      family: 'it-cs',
+      source: 'https://www.cqu.edu.au/courses/study-areas/information-technology-and-digital-media/undergraduate/bachelor-of-information-technology',
+    },
+    {
+      id: 'cqu-business',
+      uni: 'CQU', name: 'Bachelor of Business',
+      qtacCode: '855041', lsr: 65.0, lsrYear: 2025,
+      prereqs: ['English'],
+      family: 'business',
+      source: 'https://www.cqu.edu.au/courses/study-areas/business-accounting-and-law/undergraduate/bachelor-of-business',
+    },
+
+    // ============== Bond (8) ==============
+    {
+      id: 'bond-md',
+      uni: 'Bond', name: 'Bachelor of Medical Studies / Doctor of Medicine',
+      qtacCode: '044002', lsr: 96.0, lsrYear: 2025,
+      prereqs: ['English', 'Chemistry'],
+      recommended: ['Biology', 'Mathematical Methods'],
+      gates: ['CASPer', 'Interview', 'Personal statement'],
+      family: 'medicine',
+      source: 'https://bond.edu.au/program/bachelor-medical-studies-doctor-medicine',
+    },
+    {
+      id: 'bond-physio',
+      uni: 'Bond', name: 'Bachelor of Health Sciences / Doctor of Physiotherapy',
+      qtacCode: '044102', lsr: 92.0, lsrYear: 2025,
+      prereqs: ['English'],
+      recommended: ['Biology', 'Chemistry'],
+      family: 'health-sci',
+      source: 'https://bond.edu.au/program/bachelor-health-sciences-doctor-physiotherapy',
+    },
+    {
+      id: 'bond-law',
+      uni: 'Bond', name: 'Bachelor of Laws',
+      qtacCode: '041012', lsr: 80.0, lsrYear: 2025,
+      prereqs: ['English'],
+      family: 'law',
+      source: 'https://bond.edu.au/program/bachelor-laws',
+    },
+    {
+      id: 'bond-business',
+      uni: 'Bond', name: 'Bachelor of Business',
+      qtacCode: '041022', lsr: 75.0, lsrYear: 2025,
+      prereqs: ['English'],
+      family: 'business',
+      source: 'https://bond.edu.au/program/bachelor-business',
+    },
+    {
+      id: 'bond-actuary',
+      uni: 'Bond', name: 'Bachelor of Actuarial Science',
+      qtacCode: '041542', lsr: 92.0, lsrYear: 2025,
+      prereqs: ['English', 'Mathematical Methods'],
+      recommended: ['Specialist Mathematics'],
+      family: 'business',
+      source: 'https://bond.edu.au/program/bachelor-actuarial-science',
+    },
+    {
+      id: 'bond-it',
+      uni: 'Bond', name: 'Bachelor of Computer Science',
+      qtacCode: '042192', lsr: 75.0, lsrYear: 2025,
+      prereqs: ['English', 'Mathematical Methods'],
+      family: 'it-cs',
+      source: 'https://bond.edu.au/program/bachelor-computer-science',
+    },
+    {
+      id: 'bond-psych',
+      uni: 'Bond', name: 'Bachelor of Psychological Science',
+      qtacCode: '044062', lsr: 78.0, lsrYear: 2025,
+      prereqs: ['English'],
+      family: 'health-sci',
+      source: 'https://bond.edu.au/program/bachelor-psychological-science',
+    },
+    {
+      id: 'bond-film',
+      uni: 'Bond', name: 'Bachelor of Film and Television',
+      qtacCode: '042212', lsr: 70.0, lsrYear: 2025,
+      prereqs: ['English'],
+      family: 'creative',
+      source: 'https://bond.edu.au/program/bachelor-film-and-television',
+    },
+  ],
+};
+
+// =================== APP ===================
+// ============================================================
+// Pathway Planner — app logic
+// Reads MSHS_PATHWAY and QLD_COURSES from the surrounding inline data blocks.
+// ============================================================
+
+const STORAGE_KEY = 'pathway-planner-v1';
+
+const QUIZ = [
+  {
+    text: 'When you solve a puzzle, what makes it satisfying?',
+    opts: [
+      { label: 'Finding the clean logical answer', tags: ['stem', 'it-cs'] },
+      { label: 'Discovering a pattern or how something works', tags: ['science', 'health-sci'] },
+      { label: 'Building or making something that holds together', tags: ['engineering', 'design', 'trades'] },
+      { label: 'Telling a good story about it', tags: ['humanities', 'creative', 'law'] },
+    ],
+  },
+  {
+    text: 'A weekend with nothing scheduled. What pulls you in?',
+    opts: [
+      { label: 'Building, fixing, or making something', tags: ['engineering', 'design', 'trades'] },
+      { label: 'Reading, writing, debating, or arguing a case', tags: ['humanities', 'law'] },
+      { label: 'Helping someone — coach, tutor, look after', tags: ['health-sci', 'education', 'medicine'] },
+      { label: 'A creative project — music, video, art, code', tags: ['creative', 'it-cs', 'design'] },
+    ],
+  },
+  {
+    text: 'Which school subject have you most looked forward to walking into?',
+    opts: [
+      { label: 'Maths, Physics, or anything number-heavy', tags: ['engineering', 'it-cs', 'business'] },
+      { label: 'Biology, Chemistry, or hands-on Science', tags: ['medicine', 'health-sci', 'science'] },
+      { label: 'English, History, or Humanities', tags: ['humanities', 'law', 'education'] },
+      { label: 'Drama, Music, Art, Media, or Design', tags: ['creative', 'design'] },
+    ],
+  },
+  {
+    text: 'Which working environment sounds best a few years from now?',
+    opts: [
+      { label: 'A team building, designing, or engineering things', tags: ['engineering', 'design', 'it-cs'] },
+      { label: 'A hospital, clinic, or working directly with people', tags: ['medicine', 'health-sci'] },
+      { label: 'An office solving business or legal problems', tags: ['business', 'law'] },
+      { label: 'A studio, classroom, or place that makes culture', tags: ['creative', 'education', 'humanities'] },
+    ],
+  },
+  {
+    text: 'Pick the win that would mean most to you:',
+    opts: [
+      { label: 'Solving a problem nobody else could', tags: ['stem', 'engineering', 'science', 'it-cs'] },
+      { label: 'Helping someone through a hard time', tags: ['medicine', 'health-sci', 'education'] },
+      { label: 'Making something people love or use every day', tags: ['design', 'creative', 'it-cs', 'business'] },
+      { label: 'Winning an argument or changing how people think', tags: ['law', 'humanities', 'business'] },
+    ],
+  },
+];
+
+const FAMILY_LABELS = {
+  medicine: 'Medicine & Vet',
+  'health-sci': 'Health Sciences',
+  engineering: 'Engineering',
+  'it-cs': 'IT & Computer Science',
+  law: 'Law',
+  business: 'Business',
+  science: 'Science',
+  education: 'Education',
+  humanities: 'Humanities',
+  design: 'Design & Architecture',
+  creative: 'Creative Industries',
+  trades: 'Trades & VET',
+  stem: 'STEM (general)',
+};
+
+// Inflection points — subjects where the choice is high-leverage and a Guidance Officer conversation is worth flagging.
+const GUIDANCE_FLAGS = new Set([
+  'y10-prep-methods', 'y10-prep-specialist', 'y10-prep-chem', 'y10-prep-phys',
+  'y9-fre-imm', 'y9-music-acc',
+]);
+
+const state = {
+  tab: 'pathway',
+  selected: { y9: [], y10: [], y12: [] },
+  courseFilter: 'all',
+  courseSearch: '',
+  selectedCourse: null,
+  highlight: null,
+  quizAnswers: [null, null, null, null, null],
+};
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    Object.assign(state, s);
+    if (!state.selected) state.selected = { y9: [], y10: [], y12: [] };
+    if (!state.quizAnswers) state.quizAnswers = [null, null, null, null, null];
+  } catch (e) {}
+}
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      selected: state.selected,
+      quizAnswers: state.quizAnswers,
+    }));
+  } catch (e) {}
+}
+
+// --- Subject lookups ---
+function allSubjects() {
+  const out = [];
+  for (const s of MSHS_PATHWAY.Y8.core) out.push({ ...s, year: 'Y8' });
+  for (const g of Object.values(MSHS_PATHWAY.Y8.electives)) for (const s of g) out.push({ ...s, year: 'Y8' });
+  for (const s of MSHS_PATHWAY.Y9.core) out.push({ ...s, year: 'Y9' });
+  for (const g of Object.values(MSHS_PATHWAY.Y9.electives)) for (const s of g) out.push({ ...s, year: 'Y9' });
+  for (const s of MSHS_PATHWAY.Y10.core) out.push({ ...s, year: 'Y10' });
+  for (const g of Object.values(MSHS_PATHWAY.Y10.electives)) for (const s of g) out.push({ ...s, year: 'Y10' });
+  for (const s of MSHS_PATHWAY.Y11_12.subjects) out.push({ ...s, year: 'Y11-12' });
+  return out;
+}
+const SUBJECT_INDEX = (() => {
+  const idx = {};
+  for (const s of allSubjects()) idx[s.id] = s;
+  return idx;
+})();
+
+function findSubject(id) { return SUBJECT_INDEX[id]; }
+
+// Return all subject IDs in the forward/back chain of a given subject.
+function getChain(id) {
+  const out = new Set();
+  const fwd = [id];
+  while (fwd.length) {
+    const cur = fwd.shift();
+    if (out.has(cur)) continue;
+    out.add(cur);
+    const sub = findSubject(cur);
+    if (sub && sub.leadsTo) for (const next of sub.leadsTo) fwd.push(next);
+  }
+  // Backwards: find all subjects whose leadsTo includes cur
+  const back = [id];
+  while (back.length) {
+    const cur = back.shift();
+    for (const s of allSubjects()) {
+      if (s.leadsTo && s.leadsTo.includes(cur) && !out.has(s.id)) {
+        out.add(s.id);
+        back.push(s.id);
+      }
+    }
+  }
+  return out;
+}
+
+// Get Y12 subjects that match a course's prereq name list.
+function y12SubjectsByName(names) {
+  const out = [];
+  for (const s of MSHS_PATHWAY.Y11_12.subjects) {
+    for (const n of names) {
+      if (s.name === n) { out.push(s); break; }
+      if (n === 'English' && (s.id === 'y12-english' || s.id === 'y12-eal' || s.id === 'y12-literature')) { out.push(s); break; }
+    }
+  }
+  return out;
+}
+
+// Course readiness — checks if user's Y12 selections cover the prereqs.
+function courseStatus(course) {
+  if (!state.selected.y12.length && !state.selected.y10.length) return { kind: 'unset', text: 'pick your subjects to check' };
+  const matched = [];
+  const missing = [];
+  for (const req of course.prereqs) {
+    // Special case English — any of three Y12 English variants satisfies
+    if (req === 'English') {
+      const hasAnyEng = ['y12-english', 'y12-eal', 'y12-literature'].some(id => state.selected.y12.includes(id));
+      if (hasAnyEng) matched.push(req); else missing.push(req);
+      continue;
+    }
+    const subj = MSHS_PATHWAY.Y11_12.subjects.find(s => s.name === req);
+    if (!subj) { missing.push(req + ' (subject not in MSHS list)'); continue; }
+    if (state.selected.y12.includes(subj.id)) matched.push(req);
+    else missing.push(req);
+  }
+  if (missing.length === 0) return { kind: 'on', text: 'on track — all prereqs in your Y11-12 plan' };
+  if (matched.length === 0) return { kind: 'blocked', text: 'no prereqs in your plan yet' };
+  return { kind: 'partial', text: matched.length + ' of ' + course.prereqs.length + ' prereqs in your plan' };
+}
+
+// --- Quiz scoring ---
+function quizScores() {
+  const scores = {};
+  for (let i = 0; i < QUIZ.length; i++) {
+    const pick = state.quizAnswers[i];
+    if (pick === null || pick === undefined) continue;
+    const tags = QUIZ[i].opts[pick].tags;
+    for (const t of tags) scores[t] = (scores[t] || 0) + 1;
+  }
+  return scores;
+}
+function topFamilies(scores, n) {
+  const e = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  return e.slice(0, n).map(([k]) => k);
+}
+
+// --- Render: timeline ---
+function renderTimeline() {
+  const cols = [
+    { key: 'Y8', year: '2025', interactive: false },
+    { key: 'Y9', year: '2026', interactive: true, sel: 'y9' },
+    { key: 'Y10', year: '2027', interactive: true, sel: 'y10' },
+    { key: 'Y11-12', year: '2028-29', interactive: true, sel: 'y12' },
+  ];
+  const wrap = document.getElementById('timeline');
+  wrap.innerHTML = cols.map(col => {
+    let data;
+    if (col.key === 'Y8') data = MSHS_PATHWAY.Y8;
+    else if (col.key === 'Y9') data = MSHS_PATHWAY.Y9;
+    else if (col.key === 'Y10') data = MSHS_PATHWAY.Y10;
+    else data = MSHS_PATHWAY.Y11_12;
+
+    const ruleText = col.key === 'Y8' ? 'Already locked. No decisions to make here.'
+      : col.key === 'Y9' ? 'Pick <strong>4</strong> electives (2 per semester). Most are reversible.'
+      : col.key === 'Y10' ? 'Pick <strong>8</strong> electives (4 per semester). Real lock-in starts now.'
+      : 'Pick <strong>6</strong> subjects for senior. Must include 1 English + 1 Maths.';
+
+    let groups;
+    if (col.key === 'Y11-12') {
+      const byCat = {};
+      for (const s of data.subjects) (byCat[s.category] = byCat[s.category] || []).push(s);
+      groups = Object.entries(byCat);
+    } else {
+      groups = [['Core', data.core]];
+      for (const [g, arr] of Object.entries(data.electives || {})) groups.push([g, arr]);
+    }
+
+    const selected = col.sel ? state.selected[col.sel] : [];
+    const html = groups.map(([gname, arr]) => {
+      const items = arr.map(s => renderSubjectTile(s, col, selected.includes(s.id))).join('');
+      return '<div class="subj-group"><div class="lbl">' + gname + '</div>' + items + '</div>';
+    }).join('');
+
+    let counter = '';
+    if (col.interactive) {
+      let max;
+      if (col.key === 'Y9') max = 4;
+      else if (col.key === 'Y10') max = 8;
+      else max = 6;
+      // Count locked-program slots (each consumes 2)
+      let used = 0;
+      for (const id of selected) {
+        const s = findSubject(id);
+        used += (s && s.locks) ? s.locks : 1;
+      }
+      const cls = used > max ? 'over' : used === max ? 'full' : '';
+      counter = '<div class="slot-counter ' + cls + '">' + used + ' / ' + max + ' slots used' + (used > max ? ' — over limit' : '') + '</div>';
+    }
+
+    return '<div class="year-col" data-year="' + col.key + '">' +
+      '<h3>' + col.key + ' <span class="yr-meta">' + col.year + '</span></h3>' +
+      '<div class="yr-rule">' + ruleText + '</div>' +
+      html + counter +
+      '</div>';
+  }).join('');
+}
+
+function renderSubjectTile(s, col, isSelected) {
+  const inChain = state.highlight && getChain(state.highlight).has(s.id);
+  const cls = ['subj', isSelected ? 'selected' : '', inChain ? 'chain' : '', s.locks ? 'locked-stack' : ''].filter(Boolean).join(' ');
+  const tagType = s.type || 'CORE';
+  const locksChip = s.locks ? '<span class="locks-pill">×' + s.locks + '</span>' : '';
+  const guideFlag = GUIDANCE_FLAGS.has(s.id) ? '<span class="guide-flag" title="Inflection point — worth a Guidance Officer chat">GO</span>' : '';
+  const click = col.interactive
+    ? 'onclick="toggleSubject(\'' + col.sel + '\', \'' + s.id + '\')" ondblclick="highlightSubject(\'' + s.id + '\')"'
+    : 'onclick="highlightSubject(\'' + s.id + '\')"';
+  return '<div class="' + cls + '" ' + click + ' title="' + (col.interactive ? 'Click to toggle. Double-click to highlight chain.' : 'Click to highlight chain.') + '">' +
+    '<span class="nm">' + s.name + guideFlag + locksChip + '</span>' +
+    '<span class="tag ' + tagType + '">' + tagType + '</span>' +
+    '</div>';
+}
+
+function toggleSubject(yearKey, id) {
+  const arr = state.selected[yearKey];
+  const i = arr.indexOf(id);
+  if (i >= 0) arr.splice(i, 1); else arr.push(id);
+  saveState();
+  renderAll();
+}
+function highlightSubject(id) {
+  state.highlight = state.highlight === id ? null : id;
+  renderAll();
+}
+
+// --- Render: courses ---
+function renderCourses() {
+  const families = ['all', ...new Set(QLD_COURSES.courses.map(c => c.family))];
+  const filtersHtml = families.map(f => {
+    const lbl = f === 'all' ? 'All' : (FAMILY_LABELS[f] || f);
+    const cls = f === state.courseFilter ? 'chip active' : 'chip';
+    return '<span class="' + cls + '" onclick="setCourseFilter(\'' + f + '\')">' + lbl + '</span>';
+  }).join('');
+
+  const scores = quizScores();
+  const interestFams = new Set(topFamilies(scores, 3));
+
+  let list = QLD_COURSES.courses.slice();
+  if (state.courseFilter !== 'all') list = list.filter(c => c.family === state.courseFilter);
+  if (state.courseSearch) {
+    const q = state.courseSearch.toLowerCase();
+    list = list.filter(c => c.name.toLowerCase().includes(q) || c.uni.toLowerCase().includes(q));
+  }
+  list.sort((a, b) => b.lsr - a.lsr);
+
+  const listHtml = list.map(c => {
+    const st = courseStatus(c);
+    const isSel = state.selectedCourse === c.id;
+    const isMatch = interestFams.has(c.family);
+    const cls = ['course-card', isSel ? 'selected' : '', isMatch ? 'match' : ''].filter(Boolean).join(' ');
+    return '<div class="' + cls + '" onclick="selectCourse(\'' + c.id + '\')">' +
+      '<div class="uni">' + c.uni + '</div>' +
+      '<div class="nm">' + c.name + '</div>' +
+      '<div class="rank">' + c.lsr.toFixed(2) + '</div>' +
+      '<div class="status status-' + st.kind + '">' + st.text + '</div>' +
+      '</div>';
+  }).join('') || '<div class="placeholder">No courses match the current filter.</div>';
+
+  let detailHtml;
+  if (!state.selectedCourse) {
+    detailHtml = '<div class="course-detail empty">Click a course on the left to see its prereqs and how they map back to your Y10/Y12 picks.</div>';
+  } else {
+    const c = QLD_COURSES.courses.find(x => x.id === state.selectedCourse);
+    if (!c) detailHtml = '<div class="course-detail empty">Course not found.</div>';
+    else {
+      const matchedY12 = y12SubjectsByName(c.prereqs);
+      const prereqRows = c.prereqs.map(req => {
+        const y12 = MSHS_PATHWAY.Y11_12.subjects.find(s => s.name === req);
+        let mark, sub;
+        if (req === 'English') {
+          const hasAnyEng = ['y12-english', 'y12-eal', 'y12-literature'].some(id => state.selected.y12.includes(id));
+          mark = hasAnyEng ? 'ok' : 'no';
+          sub = hasAnyEng ? '✓ in your Y11-12 plan' : 'pick any of English / EAL / Literature in Y11-12';
+        } else if (y12 && state.selected.y12.includes(y12.id)) {
+          mark = 'ok'; sub = '✓ in your Y11-12 plan';
+        } else if (y12) {
+          // Check Y10 prep for it
+          const prep = Object.values(MSHS_PATHWAY.Y10.electives).flat().find(p => (p.leadsTo || []).includes(y12.id));
+          if (prep && state.selected.y10.includes(prep.id)) {
+            mark = 'maybe'; sub = '→ on the Y10 path via ' + prep.name + '. Add to Y11-12 to confirm.';
+          } else if (prep) {
+            mark = 'no'; sub = 'pick ' + prep.name + ' in Y10, then ' + y12.name + ' in Y11-12';
+          } else { mark = 'no'; sub = 'not yet picked'; }
+        } else { mark = 'no'; sub = 'subject not offered at MSHS (' + req + ')'; }
+        return '<div class="prereq-row"><span class="mark ' + mark + '">' + (mark==='ok'?'✓':mark==='maybe'?'⚠':'✗') + '</span><span><strong>' + req + '</strong> &middot; <span class="sub">' + sub + '</span></span></div>';
+      }).join('');
+
+      const recHtml = (c.recommended || []).length ? '<div style="margin-top:10px;font-size:13px;color:var(--text-mute);"><strong>Recommended (not required):</strong> ' + c.recommended.join(', ') + '</div>' : '';
+      const gatesHtml = (c.gates || []).length ? '<div style="margin-top:6px;font-size:13px;color:var(--warning);"><strong>Non-academic gate:</strong> ' + c.gates.join(' &middot; ') + '</div>' : '';
+
+      detailHtml = '<div class="course-detail">' +
+        '<h3>' + c.name + '</h3>' +
+        '<div class="sub-uni">' + c.uni + ' &middot; QTAC ' + c.qtacCode + '</div>' +
+        '<div class="row lsr"><span class="k">Lowest rank ' + c.lsrYear + '</span><span class="v">' + c.lsr.toFixed(2) + '</span></div>' +
+        '<div class="row"><span class="k">Family</span><span>' + (FAMILY_LABELS[c.family] || c.family) + '</span></div>' +
+        '<div style="margin-top:14px;font-weight:600;font-size:13px;color:var(--text-dim);">Prerequisites — are you on track?</div>' +
+        prereqRows + recHtml + gatesHtml +
+        '<div style="margin-top:12px;font-size:12px;"><a href="' + c.source + '" target="_blank" rel="noopener">Source &amp; verify ↗</a></div>' +
+        '<div style="margin-top:14px;"><button class="ghost tiny" onclick="highlightCourseOnTimeline(\'' + c.id + '\')">Highlight prereqs on timeline</button></div>' +
+        '</div>';
+    }
+  }
+
+  document.getElementById('courses-tab').innerHTML =
+    '<div class="course-filters">' + filtersHtml + '</div>' +
+    '<input class="search" placeholder="Search course or uni..." value="' + state.courseSearch.replace(/"/g, '&quot;') + '" oninput="setCourseSearch(this.value)">' +
+    '<div class="course-layout"><div class="course-list">' + listHtml + '</div>' + detailHtml + '</div>';
+}
+
+function setCourseFilter(f) { state.courseFilter = f; renderAll(); }
+function setCourseSearch(q) { state.courseSearch = q; renderAll(); }
+function selectCourse(id) { state.selectedCourse = state.selectedCourse === id ? null : id; renderAll(); }
+function highlightCourseOnTimeline(id) {
+  const c = QLD_COURSES.courses.find(x => x.id === id);
+  if (!c) return;
+  const y12 = MSHS_PATHWAY.Y11_12.subjects.find(s => s.name === c.prereqs.find(r => r !== 'English'));
+  state.highlight = y12 ? y12.id : null;
+  state.tab = 'pathway';
+  renderAll();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// --- Render: interests quiz ---
+function renderQuiz() {
+  const wrap = document.getElementById('interests-tab');
+  const questions = QUIZ.map((q, i) => {
+    const opts = q.opts.map((o, j) => {
+      const cls = state.quizAnswers[i] === j ? 'opt picked' : 'opt';
+      return '<div class="' + cls + '" onclick="pickQuiz(' + i + ',' + j + ')">' + o.label + '</div>';
+    }).join('');
+    return '<div class="q"><div class="q-num">Question ' + (i + 1) + '</div>' +
+      '<div class="q-text">' + q.text + '</div><div class="opts">' + opts + '</div></div>';
+  }).join('');
+
+  const scores = quizScores();
+  const answered = state.quizAnswers.filter(x => x !== null).length;
+  let resultsHtml = '';
+  if (answered > 0) {
+    const max = Math.max(...Object.values(scores), 1);
+    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+    const bars = sorted.map(([fam, sc]) => {
+      const pct = Math.round((sc / max) * 100);
+      return '<div class="family-bar"><span class="fam-name">' + (FAMILY_LABELS[fam] || fam) + '</span>' +
+        '<span class="bar-bg"><span class="bar-fill" style="width:' + pct + '%"></span></span>' +
+        '<span class="pct">' + sc + '</span></div>';
+    }).join('');
+    const reset = '<div style="margin-top:10px;"><button class="ghost tiny" onclick="resetQuiz()">Reset quiz</button></div>';
+    resultsHtml = '<div class="results-box"><h4>Your top course families (' + answered + ' / 5 answered)</h4>' + bars +
+      '<div style="margin-top:10px;font-size:12px;color:var(--text-mute);">Matching courses are highlighted with a soft gold border in the Courses tab.</div>' + reset + '</div>';
+  }
+
+  wrap.innerHTML = '<div class="quiz">' +
+    '<div class="sub" style="margin-bottom:12px;">5 questions, ~1 minute. Highlights matching course families — never tells you what to pick. Skip if you want.</div>' +
+    questions + resultsHtml + '</div>';
+}
+function pickQuiz(qi, oi) { state.quizAnswers[qi] = oi; saveState(); renderAll(); }
+function resetQuiz() { state.quizAnswers = [null, null, null, null, null]; saveState(); renderAll(); }
+
+// --- Tab switching ---
+function setTab(t) {
+  state.tab = t;
+  for (const el of document.querySelectorAll('.tabs button')) el.classList.toggle('active', el.dataset.tab === t);
+  for (const id of ['pathway-tab', 'courses-tab', 'interests-tab']) {
+    document.getElementById(id).style.display = (id === t + '-tab') ? '' : 'none';
+  }
+}
+
+function renderAll() {
+  renderTimeline();
+  renderCourses();
+  renderQuiz();
+  setTab(state.tab);
+}
+
+// --- Sanity tests (silent unless they fail) ---
+function runSanityTests() {
+  const results = [];
+  // T1: every Y10 PREP-GEN/PREP-APP leadsTo points to a real Y11-12 id (or is empty)
+  for (const arr of Object.values(MSHS_PATHWAY.Y10.electives)) {
+    for (const s of arr) {
+      for (const t of (s.leadsTo || [])) {
+        if (!findSubject(t)) results.push('Y10 ' + s.id + ' leads to unknown ' + t);
+      }
+    }
+  }
+  // T2: every QLD_COURSES prereq matches a Y11-12 subject name (or is 'English')
+  for (const c of QLD_COURSES.courses) {
+    for (const req of c.prereqs) {
+      if (req === 'English') continue;
+      if (!MSHS_PATHWAY.Y11_12.subjects.find(s => s.name === req)) results.push('Course ' + c.id + ' prereq "' + req + '" not in MSHS Y11-12');
+    }
+  }
+  if (results.length) console.warn('Pathway Planner sanity tests:', results);
+  else console.log('Pathway Planner sanity tests: passed');
+}
+
+window.toggleSubject = toggleSubject;
+window.highlightSubject = highlightSubject;
+window.setCourseFilter = setCourseFilter;
+window.setCourseSearch = setCourseSearch;
+window.selectCourse = selectCourse;
+window.highlightCourseOnTimeline = highlightCourseOnTimeline;
+window.pickQuiz = pickQuiz;
+window.resetQuiz = resetQuiz;
+window.setTab = setTab;
+
+loadState();
+renderAll();
+runSanityTests();
+
+</script>
+</body>
+</html>
